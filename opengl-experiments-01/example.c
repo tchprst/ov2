@@ -18,6 +18,8 @@ struct game_state {
 
     float camera[3];
     float is_dragging;
+    int32_t window_width;
+    int32_t window_height;
 };
 
 /* returns false if a quit has been requested */
@@ -63,12 +65,46 @@ static bool handle_events(struct game_state* state) {
 				break;
 			case SDL_MOUSEMOTION:
 				if (state->is_dragging) {
-					state->camera[0] += (float) event.motion.xrel / 800.0f * 2.0f;
-					state->camera[1] -= (float) event.motion.yrel / 600.0f * 2.0f;
+					state->camera[0] += (float) event.motion.xrel / (float) state->window_width * 2.0f;
+					state->camera[1] -= (float) event.motion.yrel / (float) state->window_height * 2.0f;
 				}
 				break;
-			case SDL_MOUSEWHEEL:
-				state->camera[2] += (float) event.wheel.y * 0.1f;
+			case SDL_MOUSEWHEEL: {
+				int32_t i;
+				float mouse_x, mouse_y, offset_x, offset_y;
+				float previous_scale = state->camera[2];
+				if (event.wheel.y > 0) {
+					for (i = 0; i < event.wheel.y; i++) {
+						state->camera[2] *= 1.1f;
+					}
+				} else if (event.wheel.y < 0) {
+					for (i = 0; i < -event.wheel.y; i++) {
+						state->camera[2] /= 1.1f;
+					}
+				}
+				if (state->camera[2] < 0.1f) {
+					state->camera[2] = 0.1f;
+				}
+				if (state->camera[2] > 20.0f) {
+					state->camera[2] = 20.0f;
+				}
+
+				/* Zoom relative to mouse cursor. */
+				mouse_x = (float) event.wheel.mouseX / (float) state->window_width * 2.0f - 1.0f;
+				mouse_y = (float) event.wheel.mouseY / (float) state->window_height * 2.0f - 1.0f;
+				mouse_y = -mouse_y;
+				offset_x = (mouse_x - state->camera[0]) * state->camera[2] / previous_scale;
+				offset_y = (mouse_y - state->camera[1]) * state->camera[2] / previous_scale;
+				state->camera[0] = mouse_x - offset_x;
+				state->camera[1] = mouse_y - offset_y;
+				break;
+			}
+			case SDL_WINDOWEVENT:
+				if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+					state->window_width = event.window.data1;
+					state->window_height = event.window.data2;
+					glViewport(0, 0, event.window.data1, event.window.data2);
+				}
 				break;
 			case SDL_QUIT:
 				should_quit = true;
@@ -154,7 +190,7 @@ static GLenum init_opengl(void) {
 	return error;
 }
 
-static struct game_state* init_game_state() {
+static struct game_state* init_game_state(int32_t window_width, int32_t window_height) {
 	struct game_state* state = malloc(sizeof(struct game_state));
 	if (state == NULL) {
 		fprintf(stderr, "Failed to allocate memory for game state\n");
@@ -163,6 +199,8 @@ static struct game_state* init_game_state() {
 		state->camera[1] = 0.0f;
 		state->camera[2] = 1.0f;
 		state->is_dragging = false;
+		state->window_width = window_width;
+		state->window_height = window_height;
 
 		load_province_definitions(
 			&state->province_definitions,
@@ -205,8 +243,8 @@ int main(int argc, char** argv) {
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
-	static const int window_width = 800;
-	static const int window_height = 600;
+	static const int window_width = 1280;
+	static const int window_height = 1024;
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
@@ -240,7 +278,7 @@ int main(int argc, char** argv) {
 		if ((error = init_opengl()) != GL_NO_ERROR) {
 			fprintf(stderr, "Failed to initialize OpenGL: %s\n", gluErrorString(error));
 			exit_code = EXIT_FAILURE;
-		} else if ((game_state = init_game_state()) == NULL) {
+		} else if ((game_state = init_game_state(window_width, window_height)) == NULL) {
 			fprintf(stderr, "Failed to initialize game state\n");
 			exit_code = EXIT_FAILURE;
 		} else {
