@@ -17,9 +17,17 @@ struct csv_file {
 
 struct csv_file* csv_open(char const* filename);
 void csv_close(struct csv_file* csv);
+
+/* Reads the next line from the file into the csv_file line buffer */
 bool csv_read_line(struct csv_file* csv);
+
+/* Reads the next token from the buffer as an unsigned int */
 bool csv_read_uint(struct csv_file* csv, unsigned int* value);
+
+/* Reads the next token from the buffer as an unsigned char */
 bool csv_read_uchar(struct csv_file* csv, unsigned char* value);
+
+/* Reads the next token from the buffer as a caller-freed string */
 bool csv_read_string(struct csv_file* csv, char const** value);
 
 #endif //OV2_CSV_H
