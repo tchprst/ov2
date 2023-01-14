@@ -20,6 +20,7 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		fprintf(stderr, "Failed to load textures\n");
 		success = false;
 	} else {
+		state->current_window = WINDOW_MAP;
 		state->camera[0] = 0.0f;
 		state->camera[1] = 0.0f;
 		state->camera[2] = 1.0f;
@@ -93,6 +94,7 @@ void free_game_state(struct game_state* game_state) {
 	glDeleteTextures(1, &game_state->resources_small_texture);
 	glDeleteTextures(1, &game_state->resources_texture);
 	glDeleteTextures(1, &game_state->resources_big_texture);
+	glDeleteTextures(1, &game_state->background_map_texture);
 
 	free(game_state);
 }

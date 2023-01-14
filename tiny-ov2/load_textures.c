@@ -70,5 +70,6 @@ bool load_textures(struct game_state* state) {
 		&& (state->topbarflag_shadow_texture = load_texture("gfx/interface/topbarflag_shadow.dds")) != 0
 		&& (state->resources_small_texture = load_texture("gfx/interface/resources_small.dds")) != 0
 		&& (state->resources_texture = load_texture("gfx/interface/resources.dds")) != 0
-		&& (state->resources_big_texture = load_texture("gfx/interface/resources_big.dds")) != 0;
+		&& (state->resources_big_texture = load_texture("gfx/interface/resources_big.dds")) != 0
+		&& (state->background_map_texture = load_texture("gfx/interface/background_map.dds")) != 0;
 }

@@ -3,6 +3,12 @@
 
 #include "game_state.h"
 
+struct frect {
+    float x, y, w, h;
+};
+
+void render_texture(struct game_state const* state, GLuint texture, struct frect* dstrect);
+
 void render_topbar(struct game_state const* game_state);
 
 #endif //OV2_UI_H

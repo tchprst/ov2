@@ -60,12 +60,12 @@ static bool handle_events(struct game_state* state) {
 				}
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if (event.button.button == SDL_BUTTON_MIDDLE) {
+				if (state->current_window == WINDOW_MAP && event.button.button == SDL_BUTTON_MIDDLE) {
 					state->is_dragging = true;
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if (event.button.button == SDL_BUTTON_MIDDLE) {
+				if (state->current_window == WINDOW_MAP && event.button.button == SDL_BUTTON_MIDDLE) {
 					state->is_dragging = false;
 				}
 				break;
@@ -136,6 +136,7 @@ static void render(struct game_state const* state) {
 	);*/
 
 	/* region draw world map */
+	if (state->current_window == WINDOW_MAP)
 	{
 		float const width = 5616.0f / (float) state->window_width;
 		float const height = 2160.0f / (float) state->window_height;
@@ -170,6 +171,12 @@ static void render(struct game_state const* state) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
+
+	if (state->current_window != WINDOW_MAP) {
+		render_texture(state, state->background_map_texture, &(struct frect) {
+			.x = 0.0f, .y = 0.0f, .w = (float) state->window_width, .h =(float) state->window_height
+		});
+	}
 
 	render_topbar(state);
 	glPopMatrix();

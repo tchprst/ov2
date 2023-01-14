@@ -2,11 +2,7 @@
 #include <SDL2/SDL.h>
 #include "ui.h"
 
-struct frect {
-    float x, y, w, h;
-};
-
-static void render_texture(struct game_state const* state, GLuint texture, struct frect* dstrect) {
+void render_texture(struct game_state const* state, GLuint texture, struct frect* dstrect) {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glEnable(GL_BLEND);
