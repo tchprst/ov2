@@ -60,12 +60,12 @@ static bool handle_events(struct game_state* state) {
 				}
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if (event.button.button == SDL_BUTTON_LEFT) {
+				if (event.button.button == SDL_BUTTON_MIDDLE) {
 					state->is_dragging = true;
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if (event.button.button == SDL_BUTTON_LEFT) {
+				if (event.button.button == SDL_BUTTON_MIDDLE) {
 					state->is_dragging = false;
 				}
 				break;
