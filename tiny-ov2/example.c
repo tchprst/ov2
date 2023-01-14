@@ -9,33 +9,39 @@
 #include <stdbool.h>
 #include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
 #include "province_definitions.h"
+#include "game_state.h"
+#include "ui.h"
 
-struct game_state {
-    size_t province_definitions_count;
-    struct province_definition* province_definitions;
-    unsigned int terrain_texture;
-    unsigned int provinces_texture;
-
-    float camera[3];
-    float is_dragging;
-    int32_t window_width;
-    int32_t window_height;
-};
+static int debug_x = 0;
+static int debug_y = 0;
 
 /* returns false if a quit has been requested */
 static bool handle_key_down(SDL_Keysym* keysym) {
 	bool should_quit = false;
 
 	switch (keysym->sym) {
-		case SDLK_ESCAPE:
-		case SDLK_q:
-			should_quit = true;
-			break;
-		case SDLK_SPACE:
-			/*should_rotate = !should_rotate;*/
-			break;
-		default:
-			break;
+	case SDLK_ESCAPE:
+	case SDLK_q:
+		should_quit = true;
+		break;
+	case SDLK_UP:
+		debug_y--;
+		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
+		break;
+	case SDLK_DOWN:
+		debug_y++;
+		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
+		break;
+	case SDLK_LEFT:
+		debug_x--;
+		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
+		break;
+	case SDLK_RIGHT:
+		debug_x++;
+		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
+		break;
+	default:
+		break;
 	}
 
 	return should_quit;
@@ -130,41 +136,56 @@ static void render(struct game_state const* state) {
 	);*/
 
 	/* region draw world map */
-	glPushMatrix();
-	glTranslatef(state->camera[0], state->camera[1], 0.0f);
-	glScalef(state->camera[2], state->camera[2], 1.0f);
+	{
+		float const width = 5616.0f / (float) state->window_width;
+		float const height = 2160.0f / (float) state->window_height;
+		glPushMatrix();
+		glTranslatef(state->camera[0], state->camera[1], 0.0f);
+		glScalef(state->camera[2], state->camera[2], 1.0f);
 
-	glBindTexture(GL_TEXTURE_2D, state->provinces_texture);
-	glEnable(GL_TEXTURE_2D);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(-1.0f, -1.0f);
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(1.0f, -1.0f);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(1.0f, 1.0f);
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(-1.0f, 1.0f);
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, state->provinces_texture);
+		glEnable(GL_TEXTURE_2D);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex2f(-width, -height);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex2f(width, -height);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex2f(width, height);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex2f(-width, height);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
 
-	glPopMatrix();
+		glPopMatrix();
+	}
 	/* endregion */
 
 	/* region draw ui */
-	glBindTexture(GL_TEXTURE_2D, state->terrain_texture);
-	glEnable(GL_TEXTURE_2D);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(-0.1f, -0.1f);
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(0.1f, -0.1f);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(0.1f, 0.1f);
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(-0.1f, 0.1f);
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
+	glPushMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, state->window_width, state->window_height);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
+
+	render_topbar(state);
+	glPopMatrix();
+//	glBindTexture(GL_TEXTURE_2D, state->terrain_texture);
+//	glEnable(GL_TEXTURE_2D);
+//	glBegin(GL_QUADS);
+//	glTexCoord2f(0.0f, 1.0f);
+//	glVertex2f(-0.1f, -0.1f);
+//	glTexCoord2f(1.0f, 1.0f);
+//	glVertex2f(0.1f, -0.1f);
+//	glTexCoord2f(1.0f, 0.0f);
+//	glVertex2f(0.1f, 0.1f);
+//	glTexCoord2f(0.0f, 0.0f);
+//	glVertex2f(-0.1f, 0.1f);
+//	glEnd();
+//	glDisable(GL_TEXTURE_2D);
 	/* endregion */
 }
 
@@ -190,55 +211,6 @@ static GLenum init_opengl(void) {
 	return error;
 }
 
-static struct game_state* init_game_state(int32_t window_width, int32_t window_height) {
-	struct game_state* state = malloc(sizeof(struct game_state));
-	if (state == NULL) {
-		fprintf(stderr, "Failed to allocate memory for game state\n");
-	} else {
-		state->camera[0] = 0.0f;
-		state->camera[1] = 0.0f;
-		state->camera[2] = 1.0f;
-		state->is_dragging = false;
-		state->window_width = window_width;
-		state->window_height = window_height;
-
-		load_province_definitions(
-			&state->province_definitions,
-			&state->province_definitions_count
-		);
-
-		if (
-			(state->terrain_texture = SOIL_load_OGL_texture(
-				"map/terrain.bmp",
-				SOIL_LOAD_AUTO,
-				SOIL_CREATE_NEW_ID,
-				SOIL_FLAG_MIPMAPS
-			)) == 0
-			|| (state->provinces_texture = SOIL_load_OGL_texture(
-				"map/provinces.bmp",
-				SOIL_LOAD_AUTO,
-				SOIL_CREATE_NEW_ID,
-				SOIL_FLAG_MIPMAPS
-			)) == 0
-			) {
-			fprintf(stderr, "SOIL loading error: '%s'\n", SOIL_last_result());
-			if (state->province_definitions != NULL) free(state->province_definitions);
-			if (state->terrain_texture != 0) glDeleteTextures(1, &state->terrain_texture);
-			if (state->provinces_texture != 0) glDeleteTextures(1, &state->provinces_texture);
-			free(state);
-			state = NULL;
-		}
-	}
-
-	return state;
-}
-
-static void free_game_state(struct game_state* game_state) {
-	glDeleteTextures(1, &game_state->terrain_texture);
-	glDeleteTextures(1, &game_state->provinces_texture);
-	free(game_state);
-}
-
 int main(int argc, char** argv) {
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;
@@ -262,7 +234,7 @@ int main(int argc, char** argv) {
 		SDL_WINDOWPOS_CENTERED,
 		window_width,
 		window_height,
-		SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+		SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN /*| SDL_WINDOW_RESIZABLE*/
 	)) == NULL) {
 		fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
 		exit_code = EXIT_FAILURE;
@@ -270,6 +242,7 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "Failed to create OpenGL context: %s\n", SDL_GetError());
 		exit_code = EXIT_FAILURE;
 	} else {
+		SDL_SetWindowResizable(window, SDL_TRUE); /* This is done here instead of on creation to make it easier for me to debug with my wm */
 		GLenum error = GL_NO_ERROR;
 		struct game_state* game_state;
 		if (SDL_GL_SetSwapInterval(1) != 0) {
