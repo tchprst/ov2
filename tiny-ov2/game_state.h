@@ -82,6 +82,15 @@ struct game_state {
     unsigned int resources_texture;
     unsigned int resources_big_texture;
     unsigned int background_map_texture;
+    unsigned int button_speeddown_texture;
+    unsigned int button_speedup_texture;
+    unsigned int speed_indicator_texture;
+    unsigned int flag_den_texture;
+    unsigned int flag_den_fascist_texture;
+    unsigned int flag_den_monarchy_texture;
+    unsigned int flag_den_republic_texture;
+    unsigned int topbar_flag_shadow_texture;
+    unsigned int topbar_flag_mask_texture;
 };
 
 struct game_state* init_game_state(int32_t window_width, int32_t window_height);

@@ -95,6 +95,15 @@ void free_game_state(struct game_state* game_state) {
 	glDeleteTextures(1, &game_state->resources_texture);
 	glDeleteTextures(1, &game_state->resources_big_texture);
 	glDeleteTextures(1, &game_state->background_map_texture);
+	glDeleteTextures(1, &game_state->button_speeddown_texture);
+	glDeleteTextures(1, &game_state->button_speedup_texture);
+	glDeleteTextures(1, &game_state->speed_indicator_texture);
+	glDeleteTextures(1, &game_state->flag_den_texture);
+	glDeleteTextures(1, &game_state->flag_den_fascist_texture);
+	glDeleteTextures(1, &game_state->flag_den_monarchy_texture);
+	glDeleteTextures(1, &game_state->flag_den_republic_texture);
+	glDeleteTextures(1, &game_state->topbar_flag_shadow_texture);
+	glDeleteTextures(1, &game_state->topbar_flag_mask_texture);
 
 	free(game_state);
 }

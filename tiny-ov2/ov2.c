@@ -12,8 +12,8 @@
 #include "game_state.h"
 #include "ui.h"
 
-static int debug_x = 0;
-static int debug_y = 0;
+int debug_x = 0;
+int debug_y = 0;
 
 /* returns false if a quit has been requested */
 static bool handle_key_down(SDL_Keysym* keysym) {

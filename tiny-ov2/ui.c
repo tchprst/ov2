@@ -55,6 +55,9 @@ static void render_texture_slice(
 	glDisable(GL_TEXTURE_2D);
 }
 
+extern int debug_y;
+extern int debug_x;
+
 void render_topbar(struct game_state const* state) {
 	render_texture(state, state->topbar_bg_texture, &(struct frect) {
 		.x = 0.0f, .y = 0.0f, .w = 1088.0f, .h = 100.0f
@@ -249,6 +252,30 @@ void render_topbar(struct game_state const* state) {
 	/* TODO: Correct icon placement */
 	render_texture(state, state->topbar_military_texture, &(struct frect) {
 		.x = 896.0f, .y = 4.0f, .w = 24.0f, .h = 24.0f
+	});
+	/* endregion */
+
+	/* region paper (country rank) */
+
+	render_texture(state, state->topbar_paper_texture, &(struct frect) {
+		.x = 0.0f, .y = 75.0f, .w = 432.0f, .h = 85.0f
+	});
+
+	render_texture(state, state->topbar_flag_mask_texture, &(struct frect) {
+		.x = 4.0f, .y = 92.0f, .w = 64.0f, .h = 44.0f
+	});
+	render_texture(state, state->flag_den_texture, &(struct frect) {
+		.x = 4.0f, .y = 92.0f, .w = 64.0f, .h = 44.0f
+	});
+
+	render_texture(state, state->topbar_flag_shadow_texture, &(struct frect) {
+		.x = 4.0f, .y = 92.0f, .w = 64.0f, .h = 44.0f
+	});
+
+	render_texture_slice(state, state->topbar_flag_overlay_texture, &(struct frect) {
+		.x = 0.50f, .y = 0.0f, .w = 0.25f, .h = 1.0f
+	}, &(struct frect) {
+		.x = -4.0f, .y = 74.0f, .w = 80.0f, .h = 80.0f
 	});
 	/* endregion */
 }

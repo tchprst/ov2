@@ -71,5 +71,14 @@ bool load_textures(struct game_state* state) {
 		&& (state->resources_small_texture = load_texture("gfx/interface/resources_small.dds")) != 0
 		&& (state->resources_texture = load_texture("gfx/interface/resources.dds")) != 0
 		&& (state->resources_big_texture = load_texture("gfx/interface/resources_big.dds")) != 0
-		&& (state->background_map_texture = load_texture("gfx/interface/background_map.dds")) != 0;
+		&& (state->background_map_texture = load_texture("gfx/interface/background_map.dds")) != 0
+		&& (state->button_speeddown_texture = load_texture("gfx/interface/button_speeddown.dds")) != 0
+		&& (state->button_speedup_texture = load_texture("gfx/interface/button_speedup.dds")) != 0
+		&& (state->speed_indicator_texture = load_texture("gfx/interface/speed_indicator.dds")) != 0
+		&& (state->flag_den_texture = load_texture("gfx/flags/DEN.tga")) != 0
+		&& (state->flag_den_fascist_texture = load_texture("gfx/flags/DEN_fascist.tga")) != 0
+		&& (state->flag_den_monarchy_texture = load_texture("gfx/flags/DEN_monarchy.tga")) != 0
+		&& (state->flag_den_republic_texture = load_texture("gfx/flags/DEN_republic.tga")) != 0
+		&& (state->topbar_flag_shadow_texture = load_texture("gfx/interface/topbarflag_shadow.dds")) != 0
+		&& (state->topbar_flag_mask_texture = load_texture("gfx/interface/topbarflag_mask.tga")) != 0;
 }
