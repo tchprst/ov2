@@ -279,3 +279,7 @@ void render_topbar(struct game_state const* state) {
 	});
 	/* endregion */
 }
+
+void load_ui(char const* path) {
+
+}

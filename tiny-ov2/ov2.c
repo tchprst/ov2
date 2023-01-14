@@ -11,6 +11,7 @@
 #include "province_definitions.h"
 #include "game_state.h"
 #include "ui.h"
+#include "parse.h"
 
 int debug_x = 0;
 int debug_y = 0;
@@ -219,6 +220,9 @@ static GLenum init_opengl(void) {
 }
 
 int main(int argc, char** argv) {
+	parse_gfx("interface/topbar.gfx");
+	parse_gui("interface/topbar.gui");
+
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
