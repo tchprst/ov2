@@ -15,9 +15,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-int debug_x = 0;
-int debug_y = 0;
-
 /* returns false if a quit has been requested */
 static bool handle_key_down(SDL_Keysym* keysym) {
 	bool should_quit = false;
@@ -26,22 +23,6 @@ static bool handle_key_down(SDL_Keysym* keysym) {
 	case SDLK_ESCAPE:
 	case SDLK_q:
 		should_quit = true;
-		break;
-	case SDLK_UP:
-		debug_y--;
-		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
-		break;
-	case SDLK_DOWN:
-		debug_y++;
-		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
-		break;
-	case SDLK_LEFT:
-		debug_x--;
-		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
-		break;
-	case SDLK_RIGHT:
-		debug_x++;
-		fprintf(stderr, "debug_x: %d, debug_y: %d\n", debug_x, debug_y);
 		break;
 	default:
 		break;
@@ -126,18 +107,6 @@ static bool handle_events(struct game_state* state) {
 static void render(struct game_state const* state) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-/*	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(45.0, (double) (800) / (double) (600), 0.001, 100.0);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(
-		0.0, 0.0, 1.0,
-		0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0
-	);*/
-
 	/* region draw world map */
 	if (state->current_window == WINDOW_MAP)
 	{
@@ -166,6 +135,7 @@ static void render(struct game_state const* state) {
 	/* endregion */
 
 	/* region draw ui */
+	/* Flat pixel-perfect rendering mode. */
 	glPushMatrix();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -175,54 +145,26 @@ static void render(struct game_state const* state) {
 	glLoadIdentity();
 	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
 
-//	if (state->current_window != WINDOW_MAP) {
-//		render_texture(state, state->background_map_texture, &(struct frect) {
-//			.x = 0.0f, .y = 0.0f, .w = (float) state->window_width, .h =(float) state->window_height
-//		});
-//	}
-//	{
-//		struct gui_defs* gui = state->gui_defs;
-//		for (; gui != NULL; gui = gui->next) {
-//			ui_render(state, gui->name);
-//		}
-//	}
 	{
-		struct gui_defs* gui = state->gui_defs;
-		for (; gui != NULL; gui = gui->next) {
-			if (strcmp(gui->name, "menubar") == 0) {
-				gui = gui->window.children;
-				for (; gui != NULL; gui = gui->next) {
-					if (strcmp(gui->name, "chat_window") == 0) {
-						gui->window.dont_render = "true";
+		/* TODO: DEBUG Hide part of the menubar widget*/
+		struct ui_widget* widget = state->widgets;
+		for (; widget != NULL; widget = widget->next) {
+			if (strcmp(widget->name, "menubar") == 0) {
+				widget = widget->window.children;
+				for (; widget != NULL; widget = widget->next) {
+					if (strcmp(widget->name, "chat_window") == 0) {
+						widget->window.dont_render = "true";
 					}
 				}
 				break;
 			}
 		}
 	}
-	ui_render(state, "topbar");
-	ui_render(state, "FPS_Counter");
-	ui_render(state, "menubar");
-	ui_render(state, "minimap_pic");
-//	ui_render(state, "console_entry_wnd");
-
-
-//	render_topbar(state);
+	find_and_render_widget(state, "topbar");
+	find_and_render_widget(state, "FPS_Counter");
+	find_and_render_widget(state, "menubar");
+	find_and_render_widget(state, "minimap_pic");
 	glPopMatrix();
-//	glBindTexture(GL_TEXTURE_2D, state->terrain_texture);
-//	glEnable(GL_TEXTURE_2D);
-//	glBegin(GL_QUADS);
-//	glTexCoord2f(0.0f, 1.0f);
-//	glVertex2f(-0.1f, -0.1f);
-//	glTexCoord2f(1.0f, 1.0f);
-//	glVertex2f(0.1f, -0.1f);
-//	glTexCoord2f(1.0f, 0.0f);
-//	glVertex2f(0.1f, 0.1f);
-//	glTexCoord2f(0.0f, 0.0f);
-//	glVertex2f(-0.1f, 0.1f);
-//	glEnd();
-//	glDisable(GL_TEXTURE_2D);
-	/* endregion */
 }
 
 static GLenum init_opengl(void) {
@@ -241,7 +183,7 @@ static GLenum init_opengl(void) {
 	if ((error = glGetError()) != GL_NO_ERROR) return error;
 
 	/* Initialize clear color */
-	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	if ((error = glGetError()) != GL_NO_ERROR) return error;
 
 	return error;

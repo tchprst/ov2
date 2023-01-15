@@ -9,26 +9,26 @@ struct frect {
 	float x, y, w, h;
 };
 
-static struct gui_defs* find_gui(struct gui_defs* defs, const char* name) {
-	for (; defs != NULL; defs = defs->next) {
-		if (strcmp(defs->name, name) == 0) {
-			return defs;
+static struct ui_widget* find_widget(struct ui_widget* widgets, const char* name) {
+	for (; widgets != NULL; widgets = widgets->next) {
+		if (strcmp(widgets->name, name) == 0) {
+			return widgets;
 		}
 	}
 	return NULL;
 }
 
-static struct sprite_defs* find_sprite(struct sprite_defs* defs, const char* name) {
-	for (; defs != NULL; defs = defs->next) {
-		if (strcmp(defs->name, name) == 0) {
-			return defs;
+static struct sprite* find_sprite(struct sprite* sprites, const char* name) {
+	for (; sprites != NULL; sprites = sprites->next) {
+		if (strcmp(sprites->name, name) == 0) {
+			return sprites;
 		}
 	}
 	return NULL;
 }
 
 /* region sprites */
-static void replace_slashes(char* c) {
+static void replace_backslashes_with_forward_slashes(char* c) {
 	for (; *c != '\0'; c++) {
 		if (*c == '\\') {
 			*c = '/';
@@ -36,9 +36,9 @@ static void replace_slashes(char* c) {
 	}
 }
 
-static void replace_tga_extensions_with_dds(char* c) {
+static void replace_tga_extension_with_dds(char* c) {
 	for (; *c != '\0'; c++) {
-		if (*c == '.' && *(c + 1) == 't' && *(c + 2) == 'g' && *(c + 3) == 'a') {
+		if (*c == '.' && *(c + 1) == 't' && *(c + 2) == 'g' && *(c + 3) == 'a' && *(c + 4) == '\0') {
 			*(c + 1) = 'd';
 			*(c + 2) = 'd';
 			*(c + 3) = 's';
@@ -47,27 +47,30 @@ static void replace_tga_extensions_with_dds(char* c) {
 }
 
 static GLuint load_texture(char const* path) {
-	char* path_with_forward_slashes = strdup(path);
-	replace_slashes(path_with_forward_slashes);
+	char* corrected_path = strdup(path);
+	replace_backslashes_with_forward_slashes(corrected_path);
 	GLuint id;
 	if ((id = SOIL_load_OGL_texture(
-		path_with_forward_slashes,
+		corrected_path,
 		SOIL_LOAD_RGBA,
 		SOIL_CREATE_NEW_ID,
 		0
 	)) == 0) {
-		replace_tga_extensions_with_dds(path_with_forward_slashes);
+		/* We retry with dds, as there are a lot of references to
+		 * non-existing tga files, with an existing dds counterpart. */
+		replace_tga_extension_with_dds(corrected_path);
 		if ((id = SOIL_load_OGL_texture(
-			path_with_forward_slashes,
+			corrected_path,
 			SOIL_LOAD_RGBA,
 			SOIL_CREATE_NEW_ID,
 			0
 		)) == 0) {
-			fprintf(stderr, "SOIL loading error while loading texture %s: %s\n", path_with_forward_slashes,
+			fprintf(stderr, "SOIL loading error while loading "
+				        "texture %s: %s\n", corrected_path,
 				SOIL_last_result());
 		}
 	}
-	free(path_with_forward_slashes);
+	free(corrected_path);
 	return id;
 }
 
@@ -77,6 +80,7 @@ struct loaded_texture {
 	struct loaded_texture* next;
 };
 
+/* TODO: Let's not keep a global texture buffer like this. */
 static struct loaded_texture* loaded_textures = NULL;
 
 static GLuint find_texture(const char* name) {
@@ -98,10 +102,10 @@ static GLuint find_or_load_texture(char const* name) {
 		loaded_textures = loaded;
 		texture = loaded->texture;
 	}
+	return texture;
 }
 
 static void render_texture(
-	struct game_state const* state,
 	GLuint texture,
 	struct frect* srcrect,
 	struct frect* dstrect
@@ -129,14 +133,13 @@ static void render_texture(
 	glDisable(GL_TEXTURE_2D);
 }
 
-static void render_sprite(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect);
-static void render_default_sprite(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect);
-static void render_line_chart(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect);
+static void render_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect);
+static void render_simple_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect);
 
-static void render_sprite(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect) {
+static void render_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect) {
 	switch (sprite->type) {
-	case TYPE_SPRITE:
-		render_default_sprite(state, sprite, frame, dstrect);
+	case TYPE_SIMPLE_SPRITE:
+		render_simple_sprite(state, sprite, frame, dstrect);
 		break;
 	case TYPE_LINE_CHART:
 		break;
@@ -161,7 +164,7 @@ static void render_sprite(struct game_state const* state, struct sprite_defs* sp
 	}
 }
 
-static void render_default_sprite(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect) {
+static void render_simple_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect) {
 	GLint width, height;
 	GLuint texture = find_texture(sprite->sprite.texture_file);
 	if (texture == 0) {
@@ -182,67 +185,42 @@ static void render_default_sprite(struct game_state const* state, struct sprite_
 		float frame_width = 1.0f / (float)sprite->sprite.no_of_frames;
 		float frame_x = frame_width * (float)frame;
 		struct frect srcrect = { frame_x, 0.0f, frame_width, 1.0f };
-		render_texture(state, texture, &srcrect, dstrect);
+		render_texture(texture, &srcrect, dstrect);
 	} else {
-		render_texture(state, texture, &(struct frect) { 0, 0, 1.0f, 1.0f }, dstrect);
+		render_texture(texture, &(struct frect) { 0, 0, 1.0f, 1.0f }, dstrect);
 	}
-}
-
-static void render_line_chart(struct game_state const* state, struct sprite_defs* sprite, uint64_t frame, struct frect* dstrect) {
-	fprintf(stderr, "render_line_chart not implemented\n");
 }
 /* endregion */
 
-/* region gui */
+/* region ui */
 
-static void render_gui(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
+static void render_widget(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
-static void render_window(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
+static void render_window(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
-static void render_icon(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
+static void render_icon(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
-static void render_button(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
+static void render_button(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
-static void render_text_box(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_instant_text_box(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void
-render_overlapping_elements_box(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_scrollbar(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_checkbox(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_edit_box(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_list_box(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_eu3_dialog(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_shield(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-static void render_position(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent);
-
-void ui_render(struct game_state const* state, char const* name) {
-	struct gui_defs* gui = find_gui(state->gui_defs, name);
-	if (gui == NULL) {
-		fprintf(stderr, "Could not find gui %s\n", name);
+void find_and_render_widget(struct game_state const* state, char const* name) {
+	struct ui_widget* widget = find_widget(state->widgets, name);
+	if (widget == NULL) {
+		fprintf(stderr, "Could not find widget '%s'.\n", name);
 	} else {
-		render_gui(state, gui, NULL);
+		render_widget(state, widget, NULL);
 	}
 }
 
-static void render_gui(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent) {
-	switch (gui->type) {
+static void render_widget(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent) {
+	switch (widget->type) {
 	case TYPE_WINDOW:
-		render_window(state, gui, parent);
+		render_window(state, widget, parent);
 		break;
 	case TYPE_ICON:
-		render_icon(state, gui, parent);
+		render_icon(state, widget, parent);
 		break;
 	case TYPE_BUTTON:
-		render_button(state, gui, parent);
+		render_button(state, widget, parent);
 		break;
 	/*case TYPE_TEXT_BOX:
 		fprintf(stderr, "TODO: render text box\n");
@@ -279,65 +257,66 @@ static void render_gui(struct game_state const* state, struct gui_defs* gui, str
 	}
 }
 
-static void render_window(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent) {
-	if (gui->window.dont_render != NULL && *gui->window.dont_render != '\0') return; /* TODO: I just use this an internal hack to disable ui, but this should be implemented properly instead */
-	struct gui_defs* child = gui->window.children;
+static void render_window(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent) {
+	if (widget->window.dont_render != NULL && *widget->window.dont_render != '\0') return; /* TODO: I just use this an internal hack to disable ui, but this should be implemented properly instead */
+	struct ui_widget* child = widget->window.children;
 	for (; child != NULL; child = child->next) {
-		render_gui(state, child, gui);
+		render_widget(state, child, widget);
 	}
 }
 
-static void render_icon(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent) {
-	if (gui->icon.sprite == NULL) return;
+static void render_icon(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent) {
+	if (widget->icon.sprite == NULL) return;
 
-	struct sprite_defs* sprite = find_sprite(state->sprite_defs, gui->icon.sprite);
+	struct sprite* sprite = find_sprite(state->sprites, widget->icon.sprite);
 	if (sprite == NULL) {
-		fprintf(stderr, "Could not find sprite %s\n", gui->icon.sprite);
+		fprintf(stderr, "Could not find sprite '%s'.\n", widget->icon.sprite);
 	} else {
 		struct frect dstrect = {
-			.x = (float)gui->position.x,
-			.y = (float)gui->position.y,
+			.x = (float)widget->position.x,
+			.y = (float)widget->position.y,
 			.w = 0.0f,
 			.h = 0.0f
 		};
 
-		/* TODO: Implement this in general */
-		switch (gui->icon.orientation) {
-		case ORIENTATION_LOWER_LEFT:
+		/* TODO: Lift orientation to widget and implement this in `render_widget` instead. */
+		switch (widget->icon.orientation) {
+		case UI_ORIENTATION_LOWER_LEFT:
 			break;
-		case ORIENTATION_UPPER_LEFT:
+		case UI_ORIENTATION_UPPER_LEFT:
 			break;
-		case ORIENTATION_CENTER_UP:
+		case UI_ORIENTATION_CENTER_UP:
 			break;
-		case ORIENTATION_CENTER:
+		case UI_ORIENTATION_CENTER:
 			break;
-		case ORIENTATION_CENTER_DOWN:
+		case UI_ORIENTATION_CENTER_DOWN:
 			break;
-		case ORIENTATION_UPPER_RIGHT:
+		case UI_ORIENTATION_UPPER_RIGHT:
 			break;
-		case ORIENTATION_LOWER_RIGHT:
+		case UI_ORIENTATION_LOWER_RIGHT:
 			dstrect.x += (float)state->window_width;
 			dstrect.y += (float)state->window_height;
 			break;
 		default:
 			assert(0);
 		}
+		/* TODO: Handle position chain properly. */
 		if(parent != NULL) {
 			dstrect.x += (float)parent->position.x;
 			dstrect.y += (float)parent->position.y;
 		}
-		render_sprite(state, sprite, gui->icon.frame, &dstrect);
+		render_sprite(state, sprite, widget->icon.frame, &dstrect);
 	}
 }
 
-static void render_button(struct game_state const* state, struct gui_defs* gui, struct gui_defs* parent) {
-	if (gui->button.quad_texture_sprite == NULL) return;
-	struct sprite_defs* sprite = find_sprite(state->sprite_defs, gui->button.quad_texture_sprite);
+static void render_button(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent) {
+	if (widget->button.quad_texture_sprite == NULL) return;
+	struct sprite* sprite = find_sprite(state->sprites, widget->button.quad_texture_sprite);
 	if (sprite == NULL) {
-		fprintf(stderr, "Could not find sprite %s\n", gui->button.quad_texture_sprite);
+		fprintf(stderr, "Could not find sprite %s.\n", widget->button.quad_texture_sprite);
 	} else {
-		/* region TODO */
-		if((gui->size.x == 0 || gui->size.y == 0) && sprite->type == TYPE_SPRITE && sprite->sprite.texture_file != NULL && *sprite->sprite.texture_file != '\0') {
+		/* region TODO: Figure out a proper way of handling no_of_frames/sprite texture size. */
+		if((widget->size.x == 0 || widget->size.y == 0) && sprite->type == TYPE_SIMPLE_SPRITE && sprite->sprite.texture_file != NULL && *sprite->sprite.texture_file != '\0') {
 			GLint width, height;
 			GLuint t = find_or_load_texture(sprite->sprite.texture_file);
 			glBindTexture(GL_TEXTURE_2D, t);
@@ -347,33 +326,33 @@ static void render_button(struct game_state const* state, struct gui_defs* gui, 
 			if (sprite->sprite.no_of_frames > 1) {
 				width /= (float) sprite->sprite.no_of_frames;
 			}
-			gui->size.x = width;
-			gui->size.y = height;
+			widget->size.x = width;
+			widget->size.y = height;
 		}
 		/* endregion */
 
 		struct frect dstrect = {
-			.x = (float)gui->position.x,
-			.y = (float)gui->position.y,
-			.w = (float)gui->size.x,
-			.h = (float)gui->size.y,
+			.x = (float)widget->position.x,
+			.y = (float)widget->position.y,
+			.w = (float)widget->size.x,
+			.h = (float)widget->size.y,
 		};
 
-		/* TODO: Implement this in general */
-		switch (gui->button.orientation) {
-		case ORIENTATION_LOWER_LEFT:
+		/* TODO: Lift orientation to widget and implement this in `render_widget` instead. */
+		switch (widget->button.orientation) {
+		case UI_ORIENTATION_LOWER_LEFT:
 			break;
-		case ORIENTATION_UPPER_LEFT:
+		case UI_ORIENTATION_UPPER_LEFT:
 			break;
-		case ORIENTATION_CENTER_UP:
+		case UI_ORIENTATION_CENTER_UP:
 			break;
-		case ORIENTATION_CENTER:
+		case UI_ORIENTATION_CENTER:
 			break;
-		case ORIENTATION_CENTER_DOWN:
+		case UI_ORIENTATION_CENTER_DOWN:
 			break;
-		case ORIENTATION_UPPER_RIGHT:
+		case UI_ORIENTATION_UPPER_RIGHT:
 			break;
-		case ORIENTATION_LOWER_RIGHT:
+		case UI_ORIENTATION_LOWER_RIGHT:
 			dstrect.x += (float)state->window_width;
 			dstrect.y += (float)state->window_height;
 			break;
@@ -381,12 +360,13 @@ static void render_button(struct game_state const* state, struct gui_defs* gui, 
 			assert(0);
 		}
 
-		/*if(parent != NULL) {
+		/* TODO: Handle position chain when rendering:
+		if(parent != NULL) {
 			dstrect.x += (float)parent->position.x;
 			dstrect.y += (float)parent->position.y;
 		}*/
 		render_sprite(state, sprite, 0, &dstrect);
-		/* region TODO */
+		/* region TODO: Handle button hover/press properly. */
 		int mouse_x, mouse_y;
 		uint32_t mouseButtons = SDL_GetMouseState(&mouse_x, &mouse_y);
 		if ((float)mouse_x >= dstrect.x

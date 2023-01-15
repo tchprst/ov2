@@ -19,4 +19,9 @@ void load_province_definitions(
 	size_t* count
 );
 
+void free_province_definitions(
+	struct province_definition* definitions,
+	size_t count
+);
+
 #endif //OV2_PROVINCE_DEFINITIONS_H

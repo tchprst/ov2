@@ -29,30 +29,37 @@ void load_province_definitions(
 				break;
 			}
 			*definitions = new_definitions;
+			(*count)++;
 			if (
-				!csv_read_uint(csv, &(*definitions)[*count].id)
-				|| !csv_read_uchar(csv, &(*definitions)[*count].r)
-				|| !csv_read_uchar(csv, &(*definitions)[*count].g)
-				|| !csv_read_uchar(csv, &(*definitions)[*count].b)
-				|| !csv_read_string(csv, &(*definitions)[*count].name)
+				!csv_read_uint(csv, &(*definitions)[*count - 1].id)
+				|| !csv_read_uchar(csv, &(*definitions)[*count - 1].r)
+				|| !csv_read_uchar(csv, &(*definitions)[*count - 1].g)
+				|| !csv_read_uchar(csv, &(*definitions)[*count - 1].b)
+				|| !csv_read_string(csv, &(*definitions)[*count - 1].name)
 			) {
-				fprintf(stderr, "Failed to read map/definition.csv");
+				fprintf(stderr, "Failed to read 'map/definition.csv'.");
 				success = false;
 				break;
 			}
-			(*count)++;
 		}
 		if (!success) {
 			if (*definitions != NULL) {
-				size_t i;
-				for (i = 0; i < *count; i++) {
-					free((void*) (*definitions)[i].name);
-				}
-				free(*definitions);
+				free_province_definitions(*definitions, *count);
 				*definitions = NULL;
 			}
 			*count = 0;
 		}
 	}
 	csv_close(csv);
+}
+
+void free_province_definitions(
+	struct province_definition* definitions,
+	size_t count
+) {
+	size_t i;
+	for (i = 0; i < count; i++) {
+		free((void*) definitions[i].name);
+	}
+	free(definitions);
 }
