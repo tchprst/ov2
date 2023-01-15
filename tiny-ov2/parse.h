@@ -30,7 +30,6 @@ enum load_type {
 };
 
 struct sprite_def {
-	char* name;
 	char* texture_file;
 	char* effect_file;
 	int64_t no_of_frames;
@@ -42,14 +41,12 @@ struct sprite_def {
 };
 
 struct line_chart_def {
-	char* name;
 	struct vec2i size;
 	int64_t line_width;
 	bool always_transparent;
 };
 
 struct masked_shield_def {
-	char* name;
 	char* texture_file1;
 	char* texture_file2;
 	char* effect_file;
@@ -58,7 +55,6 @@ struct masked_shield_def {
 };
 
 struct progress_bar_def {
-	char* name;
 	struct rgb color1;
 	struct rgb color2;
 	char* texture_file_1;
@@ -71,7 +67,6 @@ struct progress_bar_def {
 };
 
 struct cornered_tile_sprite_def {
-	char* name;
 	struct vec2i size;
 	char* texture_file;
 	struct vec2i border_size;
@@ -80,7 +75,6 @@ struct cornered_tile_sprite_def {
 };
 
 struct text_sprite_def {
-	char* name;
 	char* texture_file;
 	int64_t no_of_frames;
 	char* effect_file;
@@ -90,17 +84,14 @@ struct text_sprite_def {
 };
 
 struct bar_chart_def {
-	char* name;
 	struct vec2i size;
 };
 
 struct pie_chart_def {
-	char* name;
 	int64_t size;
 };
 
 struct tile_sprite_def {
-	char* name;
 	char* texture_file;
 	char* effect_file;
 	enum load_type load_type;
@@ -109,7 +100,6 @@ struct tile_sprite_def {
 };
 
 struct scrolling_sprite_def {
-	char* name;
 	char* texture_file1;
 	struct vec2i size;
 	char* effect_file;
@@ -119,6 +109,7 @@ struct scrolling_sprite_def {
 
 struct sprite_defs {
 	struct sprite_defs* next;
+	char* name;
 	enum {
 		TYPE_SPRITE,
 		TYPE_LINE_CHART,
@@ -169,10 +160,7 @@ enum gui_format {
 };
 
 struct window_def {
-	char* name;
 	char* background;
-	struct vec2i position;
-	struct vec2i size;
 	bool movable;
 	char* dont_render;
 	char* horizontal_border;
@@ -185,9 +173,7 @@ struct window_def {
 };
 
 struct icon_def {
-	char* name;
 	char* sprite;
-	struct vec2i position;
 	enum gui_orientation orientation;
 	int64_t frame;
 	char* button_mesh;
@@ -195,9 +181,7 @@ struct icon_def {
 	double scale;
 };
 
-struct gui_button_def {
-	char* name;
-	struct vec2i position;
+struct button_def {
 	char* quad_texture_sprite;
 	char* button_text;
 	char* button_font;
@@ -209,13 +193,11 @@ struct gui_button_def {
 	char* delayed_tooltip_text;
 	char* sprite_type;
 	char* parent;
-	struct vec2i size;
 	double rotation;
 	enum gui_format format;
 };
 
 struct text_box_def {
-	char* name;
 	struct vec2i position;
 	char* font;
 	struct vec2i border_size;
@@ -229,7 +211,6 @@ struct text_box_def {
 };
 
 struct instant_text_box_def {
-	char* name;
 	struct vec2i position;
 	char* font;
 	struct vec2i border_size;
@@ -244,22 +225,16 @@ struct instant_text_box_def {
 };
 
 struct overlapping_elements_box_def {
-	char* name;
-	struct vec2i position;
-	struct vec2i size;
 	enum gui_orientation orientation;
 	enum gui_format format;
 	double spacing;
 };
 
 struct scrollbar_def {
-	char* name;
 	char* slider;
 	char* track;
 	char* left_button;
 	char* right_button;
-	struct vec2i size;
-	struct vec2i position;
 	int64_t priority;
 	struct vec2i border_size;
 	double max_value;
@@ -277,7 +252,6 @@ struct scrollbar_def {
 };
 
 struct checkbox_def {
-	char* name;
 	struct vec2i position;
 	char* quad_texture_sprite;
 	char* tooltip;
@@ -290,21 +264,15 @@ struct checkbox_def {
 };
 
 struct edit_box_def {
-	char* name;
-	struct vec2i position;
 	char* texture_file;
 	char* font;
 	struct vec2i border_size;
-	struct vec2i size;
 	char* text;
 	enum gui_orientation orientation;
 };
 
 struct list_box_def {
-	char* name;
-	struct vec2i position;
 	char* background;
-	struct vec2i size;
 	enum gui_orientation orientation;
 	int64_t spacing;
 	char* scrollbar_type;
@@ -317,10 +285,7 @@ struct list_box_def {
 };
 
 struct eu3_dialog_def {
-	char* name;
 	char* background;
-	struct vec2i position;
-	struct vec2i size;
 	bool movable;
 	char* dont_render;
 	char* horizontal_border;
@@ -331,23 +296,19 @@ struct eu3_dialog_def {
 };
 
 struct shield_def {
-	char* name;
 	char* sprite_type;
-	struct vec2i position;
 	double rotation;
-};
-
-struct position_def {
-	char* name;
-	struct vec2i position;
 };
 
 struct gui_defs {
 	struct gui_defs* next;
+	char* name;
+	struct vec2i position;
+	struct vec2i size;
 	enum {
 		TYPE_WINDOW,
 		TYPE_ICON,
-		TYPE_GUI_BUTTON,
+		TYPE_BUTTON,
 		TYPE_TEXT_BOX,
 		TYPE_INSTANT_TEXT_BOX,
 		TYPE_OVERLAPPING_ELEMENTS_BOX,
@@ -362,7 +323,7 @@ struct gui_defs {
 	union {
 		struct window_def window;
 		struct icon_def icon;
-		struct gui_button_def gui_button;
+		struct button_def button;
 		struct text_box_def text_box;
 		struct instant_text_box_def instant_text_box;
 		struct overlapping_elements_box_def overlapping_elements_box;
@@ -372,12 +333,15 @@ struct gui_defs {
 		struct list_box_def list_box;
 		struct eu3_dialog_def eu3_dialog;
 		struct shield_def shield;
-		struct position_def position;
 	};
 };
 
 /* endregion */
 
 void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gui_defs);
+
+void free_sprites(struct sprite_defs* gfx_defs);
+
+void free_gui(struct gui_defs* gui_defs);
 
 #endif //OV2_PARSE_H

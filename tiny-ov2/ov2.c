@@ -1,8 +1,9 @@
 #include "province_definitions.h"
 #include "game_state.h"
-#include "ui.h"
+#include "legacy_ui.h"
 #include "parse.h"
 #include "fs.h"
+#include "ui.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_video.h>
@@ -174,13 +175,39 @@ static void render(struct game_state const* state) {
 	glLoadIdentity();
 	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
 
-	if (state->current_window != WINDOW_MAP) {
-		render_texture(state, state->background_map_texture, &(struct frect) {
-			.x = 0.0f, .y = 0.0f, .w = (float) state->window_width, .h =(float) state->window_height
-		});
+//	if (state->current_window != WINDOW_MAP) {
+//		render_texture(state, state->background_map_texture, &(struct frect) {
+//			.x = 0.0f, .y = 0.0f, .w = (float) state->window_width, .h =(float) state->window_height
+//		});
+//	}
+//	{
+//		struct gui_defs* gui = state->gui_defs;
+//		for (; gui != NULL; gui = gui->next) {
+//			ui_render(state, gui->name);
+//		}
+//	}
+	{
+		struct gui_defs* gui = state->gui_defs;
+		for (; gui != NULL; gui = gui->next) {
+			if (strcmp(gui->name, "menubar") == 0) {
+				gui = gui->window.children;
+				for (; gui != NULL; gui = gui->next) {
+					if (strcmp(gui->name, "chat_window") == 0) {
+						gui->window.dont_render = "true";
+					}
+				}
+				break;
+			}
+		}
 	}
+	ui_render(state, "topbar");
+	ui_render(state, "FPS_Counter");
+	ui_render(state, "menubar");
+	ui_render(state, "minimap_pic");
+//	ui_render(state, "console_entry_wnd");
 
-	render_topbar(state);
+
+//	render_topbar(state);
 	glPopMatrix();
 //	glBindTexture(GL_TEXTURE_2D, state->terrain_texture);
 //	glEnable(GL_TEXTURE_2D);
@@ -221,33 +248,6 @@ static GLenum init_opengl(void) {
 }
 
 int main(int argc, char** argv) {
-	{
-		struct sprite_defs* sprites = NULL;
-		struct gui_defs* guis = NULL;
-		DIR* dir;
-		struct dirent* entry;
-		if ((dir = opendir("interface")) == NULL) {
-			fprintf(stderr, "Failed to open interface directory\n");
-			return EXIT_FAILURE;
-		}
-		while ((entry = readdir(dir)) != NULL) {
-			if (entry->d_type == DT_REG) {
-				char* path = malloc(strlen("interface/") + strlen(entry->d_name) + 1);
-				if (path == NULL) {
-					fprintf(stderr, "Failed to allocate memory for path\n");
-					return EXIT_FAILURE;
-				}
-				strcpy(path, "interface/");
-				strcat(path, entry->d_name);
-				if (has_ext(path, ".gfx") || has_ext(path, ".gui")) {
-					parse(path, &sprites, &guis);
-				}
-				free(path);
-			}
-		}
-		closedir(dir);
-	}
-
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
@@ -282,7 +282,7 @@ int main(int argc, char** argv) {
 		GLenum error = GL_NO_ERROR;
 		struct game_state* game_state;
 		if (SDL_GL_SetSwapInterval(1) != 0) {
-			fprintf(stderr, "Warning: Failed to set vsync: %s\n", SDL_GetError());
+			fprintf(stderr, "WARNING: Failed to set vsync: %s\n", SDL_GetError());
 		}
 		if ((error = init_opengl()) != GL_NO_ERROR) {
 			fprintf(stderr, "Failed to initialize OpenGL: %s\n", gluErrorString(error));

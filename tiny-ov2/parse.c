@@ -386,7 +386,7 @@ static void parse_load_type(struct source* src, enum load_type* load_type) {
 static void parse_line_chart(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_LINE_CHART;
-	def->line_chart.name = NULL;
+	def->name = NULL;
 	def->line_chart.always_transparent = false;
 	def->line_chart.line_width = 1;
 	def->line_chart.size = (struct vec2i){0, 0};
@@ -399,7 +399,7 @@ static void parse_line_chart(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->line_chart.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_vec2i(src, &def->line_chart.size);
 		} else if (strcasecmp(property, "linewidth") == 0) {
@@ -418,7 +418,7 @@ static void parse_line_chart(struct source* src, struct sprite_defs* def) {
 static void parse_sprite(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_SPRITE;
-	def->sprite.name = NULL;
+	def->name = NULL;
 	def->sprite.texture_file = NULL;
 	def->sprite.effect_file = NULL;
 	def->sprite.no_of_frames = 1;
@@ -436,7 +436,7 @@ static void parse_sprite(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->sprite.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "texturefile") == 0) {
 			parse_string_literal(src, &def->sprite.texture_file);
 		} else if (strcasecmp(property, "noofframes") == 0) {
@@ -465,7 +465,7 @@ static void parse_sprite(struct source* src, struct sprite_defs* def) {
 static void parse_masked_shield(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_MASKED_SHIELD;
-	def->masked_shield.name = NULL;
+	def->name = NULL;
 	def->masked_shield.texture_file1 = NULL;
 	def->masked_shield.texture_file2 = NULL;
 	def->masked_shield.effect_file = false;
@@ -480,7 +480,7 @@ static void parse_masked_shield(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->masked_shield.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "texturefile1") == 0) {
 			parse_string_literal(src, &def->masked_shield.texture_file1);
 		} else if (strcasecmp(property, "texturefile2") == 0) {
@@ -503,7 +503,7 @@ static void parse_masked_shield(struct source* src, struct sprite_defs* def) {
 static void parse_progress_bar(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_PROGRESS_BAR;
-	def->progress_bar.name = NULL;
+	def->name = NULL;
 	def->progress_bar.color1 = (struct rgb){0, 0, 0};
 	def->progress_bar.color2 = (struct rgb){0, 0, 0};
 	def->progress_bar.texture_file_1 = NULL;
@@ -522,7 +522,7 @@ static void parse_progress_bar(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->progress_bar.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "color") == 0) {
 			parse_rgb(src, &def->progress_bar.color1);
 		} else if (strcasecmp(property, "colortwo") == 0) {
@@ -553,7 +553,7 @@ static void parse_progress_bar(struct source* src, struct sprite_defs* def) {
 static void parse_cornered_tile_sprite(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_CORNERED_TILE_SPRITE;
-	def->cornered_tile_sprite.name = NULL;
+	def->name = NULL;
 	def->cornered_tile_sprite.size = (struct vec2i){0, 0};
 	def->cornered_tile_sprite.texture_file = NULL;
 	def->cornered_tile_sprite.border_size = (struct vec2i){0, 0};
@@ -568,7 +568,7 @@ static void parse_cornered_tile_sprite(struct source* src, struct sprite_defs* d
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->cornered_tile_sprite.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_vec2i(src, &def->cornered_tile_sprite.size);
 		} else if (strcasecmp(property, "texturefile") == 0) {
@@ -591,7 +591,7 @@ static void parse_cornered_tile_sprite(struct source* src, struct sprite_defs* d
 static void parse_text_sprite(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_TEXT_SPRITE;
-	def->text_sprite.name = NULL;
+	def->name = NULL;
 	def->text_sprite.texture_file = NULL;
 	def->text_sprite.no_of_frames = 0;
 	def->text_sprite.effect_file = NULL;
@@ -607,7 +607,7 @@ static void parse_text_sprite(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->text_sprite.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "texturefile") == 0) {
 			parse_string_literal(src, &def->text_sprite.texture_file);
 		} else if (strcasecmp(property, "noofframes") == 0) {
@@ -632,7 +632,7 @@ static void parse_text_sprite(struct source* src, struct sprite_defs* def) {
 static void parse_bar_chart(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_BAR_CHART;
-	def->bar_chart.name = NULL;
+	def->name = NULL;
 	def->bar_chart.size = (struct vec2i){0, 0};
 	parse_str(src, "=");
 	parse_str(src, "{");
@@ -643,7 +643,7 @@ static void parse_bar_chart(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->bar_chart.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_vec2i(src, &def->bar_chart.size);
 		} else {
@@ -658,7 +658,7 @@ static void parse_bar_chart(struct source* src, struct sprite_defs* def) {
 static void parse_pie_chart(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_PIE_CHART;
-	def->pie_chart.name = NULL;
+	def->name = NULL;
 	def->pie_chart.size = 0;
 	parse_str(src, "=");
 	parse_str(src, "{");
@@ -669,7 +669,7 @@ static void parse_pie_chart(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->pie_chart.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_int_literal(src, &def->pie_chart.size);
 		} else {
@@ -684,7 +684,7 @@ static void parse_pie_chart(struct source* src, struct sprite_defs* def) {
 static void parse_tile_sprite(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_TILE_SPRITE;
-	def->tile_sprite.name = NULL;
+	def->name = NULL;
 	def->tile_sprite.texture_file = NULL;
 	def->tile_sprite.effect_file = NULL;
 	def->tile_sprite.load_type = LOAD_TYPE_INGAME;
@@ -699,7 +699,7 @@ static void parse_tile_sprite(struct source* src, struct sprite_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->tile_sprite.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "texturefile") == 0) {
 			parse_string_literal(src, &def->tile_sprite.texture_file);
 		} else if (strcasecmp(property, "effectfile") == 0) {
@@ -722,7 +722,7 @@ static void parse_tile_sprite(struct source* src, struct sprite_defs* def) {
 static void parse_scrolling_sprite(struct source* src, struct sprite_defs* def) {
 	char c = '\0';
 	def->type = TYPE_SCROLLING_SPRITE;
-	def->scrolling_sprite.name = NULL;
+	def->name = NULL;
 	def->scrolling_sprite.texture_file1 = NULL;
 	def->scrolling_sprite.size = (struct vec2i){0, 0};
 	def->scrolling_sprite.effect_file = NULL;
@@ -737,7 +737,7 @@ static void parse_scrolling_sprite(struct source* src, struct sprite_defs* def) 
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->scrolling_sprite.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "texturefile1") == 0) {
 			parse_string_literal(src, &def->scrolling_sprite.texture_file1);
 		} else if (strcasecmp(property, "size") == 0) {
@@ -788,8 +788,16 @@ static void parse_sprites(struct source* src, struct sprite_defs** defs) {
 		} else  {
 			error(src, "Unknown sprite type: %s", type);
 		}
-		def->next = *defs;
-		*defs = def;
+		def->next = NULL;
+		if (*defs == NULL) {
+			*defs = def;
+		} else {
+			struct sprite_defs* last = *defs;
+			while (last->next != NULL) {
+				last = last->next;
+			}
+			last->next = def;
+		}
 
 		free(type);
 	}
@@ -848,10 +856,10 @@ static void parse_window(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_WINDOW;
-	def->window.name = NULL;
+	def->name = NULL;
 	def->window.background = NULL;
-	def->window.position = (struct vec2i){0, 0};
-	def->window.size = (struct vec2i){0, 0};
+	def->position = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
 	def->window.movable = 0;
 	def->window.dont_render = NULL;
 	def->window.horizontal_border = NULL;
@@ -869,13 +877,13 @@ static void parse_window(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->window.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "background") == 0) {
 			parse_string_literal(src, &def->window.background);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->window.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->window.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "moveable") == 0) {
 			parse_bool_literal(src, &def->window.movable);
 		} else if (strcasecmp(property, "dontrender") == 0) {
@@ -906,9 +914,9 @@ static void parse_icon(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_ICON;
-	def->icon.name = NULL;
+	def->name = NULL;
 	def->icon.sprite = NULL;
-	def->icon.position = (struct vec2i){0, 0};
+	def->position = (struct vec2i){0, 0};
 	def->icon.orientation = ORIENTATION_LOWER_LEFT;
 	def->icon.frame = 0;
 	def->icon.button_mesh = NULL;
@@ -922,11 +930,11 @@ static void parse_icon(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->icon.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "spritetype") == 0) {
 			parse_string_literal(src, &def->icon.sprite);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->icon.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->icon.orientation);
 		} else if (strcasecmp(property, "frame") == 0) {
@@ -947,25 +955,25 @@ static void parse_icon(struct source* src, struct gui_defs* def) {
 	parse_str(src, "}");
 }
 
-static void parse_gui_button(struct source* src, struct gui_defs* def) {
+static void parse_button(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
-	def->type = TYPE_GUI_BUTTON;
-	def->gui_button.name = NULL;
-	def->gui_button.position = (struct vec2i){0, 0};
-	def->gui_button.quad_texture_sprite = NULL;
-	def->gui_button.button_text = NULL;
-	def->gui_button.button_font = NULL;
-	def->gui_button.click_sound = CLICK_SOUND_CLICK;
-	def->gui_button.orientation = ORIENTATION_LOWER_LEFT;
-	def->gui_button.tooltip = NULL;
-	def->gui_button.tooltip_text = NULL;
-	def->gui_button.delayed_tooltip_text = NULL;
-	def->gui_button.sprite_type = NULL;
-	def->gui_button.parent = NULL;
-	def->gui_button.size = (struct vec2i){0, 0};
-	def->gui_button.rotation = 0.0;
-	def->gui_button.format = GUI_FORMAT_LEFT;
+	def->type = TYPE_BUTTON;
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
+	def->button.quad_texture_sprite = NULL;
+	def->button.button_text = NULL;
+	def->button.button_font = NULL;
+	def->button.click_sound = CLICK_SOUND_CLICK;
+	def->button.orientation = ORIENTATION_LOWER_LEFT;
+	def->button.tooltip = NULL;
+	def->button.tooltip_text = NULL;
+	def->button.delayed_tooltip_text = NULL;
+	def->button.sprite_type = NULL;
+	def->button.parent = NULL;
+	def->size = (struct vec2i){0, 0};
+	def->button.rotation = 0.0;
+	def->button.format = GUI_FORMAT_LEFT;
 	parse_str(src, "{");
 
 	peek_char(src, &c, true);
@@ -974,37 +982,37 @@ static void parse_gui_button(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->window.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->gui_button.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "quadtexturesprite") == 0) {
-			parse_string_literal(src, &def->gui_button.quad_texture_sprite);
+			parse_string_literal(src, &def->button.quad_texture_sprite);
 		} else if (strcasecmp(property, "buttontext") == 0) {
-			parse_string_literal(src, &def->gui_button.button_text);
+			parse_string_literal(src, &def->button.button_text);
 		} else if (strcasecmp(property, "buttonfont") == 0) {
-			parse_string_literal(src, &def->gui_button.button_font);
+			parse_string_literal(src, &def->button.button_font);
 		} else if (strcasecmp(property, "shortcut") == 0) {
-			parse_string_literal(src, &def->gui_button.shortcut);
+			parse_string_literal(src, &def->button.shortcut);
 		} else if (strcasecmp(property, "clicksound") == 0) {
-			parse_click_sound(src, &def->gui_button.click_sound);
+			parse_click_sound(src, &def->button.click_sound);
 		} else if (strcasecmp(property, "orientation") == 0) {
-			parse_gui_orientation(src, &def->gui_button.orientation);
+			parse_gui_orientation(src, &def->button.orientation);
 		} else if (strcasecmp(property, "tooltip") == 0) {
-			parse_string_literal(src, &def->gui_button.tooltip);
+			parse_string_literal(src, &def->button.tooltip);
 		} else if (strcasecmp(property, "tooltiptext") == 0) {
-			parse_string_literal(src, &def->gui_button.tooltip_text);
+			parse_string_literal(src, &def->button.tooltip_text);
 		} else if (strcasecmp(property, "delayedtooltiptext") == 0) {
-			parse_string_literal(src, &def->gui_button.delayed_tooltip_text);
+			parse_string_literal(src, &def->button.delayed_tooltip_text);
 		} else if (strcasecmp(property, "spritetype") == 0) {
-			parse_string_literal(src, &def->gui_button.sprite_type);
+			parse_string_literal(src, &def->button.sprite_type);
 		} else if (strcasecmp(property, "parent") == 0) {
-			parse_string_literal(src, &def->gui_button.parent);
+			parse_string_literal(src, &def->button.parent);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->gui_button.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "rotation") == 0) {
-			parse_float_literal(src, &def->gui_button.rotation);
+			parse_float_literal(src, &def->button.rotation);
 		} else if (strcasecmp(property, "format") == 0) {
-			parse_gui_format(src, &def->gui_button.format);
+			parse_gui_format(src, &def->button.format);
 		} else {
 			error(src, "Unknown property '%s' for button", property);
 		}
@@ -1019,8 +1027,8 @@ static void parse_text_box(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_TEXT_BOX;
-	def->text_box.name = NULL;
-	def->text_box.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	def->text_box.font = NULL;
 	def->text_box.border_size = (struct vec2i){0, 0};
 	def->text_box.text = NULL;
@@ -1038,9 +1046,9 @@ static void parse_text_box(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->text_box.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->text_box.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "font") == 0) {
 			parse_string_literal(src, &def->text_box.font);
 		} else if (strcasecmp(property, "bordersize") == 0) {
@@ -1073,8 +1081,8 @@ static void parse_instant_text_box(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_INSTANT_TEXT_BOX;
-	def->instant_text_box.name = NULL;
-	def->instant_text_box.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	def->instant_text_box.font = NULL;
 	def->instant_text_box.border_size = (struct vec2i){0, 0};
 	def->instant_text_box.text = NULL;
@@ -1093,9 +1101,9 @@ static void parse_instant_text_box(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->instant_text_box.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->instant_text_box.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "font") == 0) {
 			parse_string_literal(src, &def->instant_text_box.font);
 		} else if (strcasecmp(property, "bordersize") == 0) {
@@ -1130,9 +1138,9 @@ static void parse_overlapping_elements_box(struct source* src, struct gui_defs* 
 	char c = '\0';
 
 	def->type = TYPE_OVERLAPPING_ELEMENTS_BOX;
-	def->overlapping_elements_box.name = NULL;
-	def->overlapping_elements_box.position = (struct vec2i){0, 0};
-	def->overlapping_elements_box.size = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
 	def->overlapping_elements_box.orientation = ORIENTATION_LOWER_LEFT;
 	def->overlapping_elements_box.format = GUI_FORMAT_LEFT;
 	def->overlapping_elements_box.spacing = 0;
@@ -1144,11 +1152,11 @@ static void parse_overlapping_elements_box(struct source* src, struct gui_defs* 
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->overlapping_elements_box.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->overlapping_elements_box.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->overlapping_elements_box.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->overlapping_elements_box.orientation);
 		} else if (strcasecmp(property, "format") == 0) {
@@ -1169,13 +1177,13 @@ static void parse_scrollbar(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_SCROLLBAR;
-	def->scrollbar.name = NULL;
+	def->name = NULL;
 	def->scrollbar.slider = NULL;
 	def->scrollbar.track = NULL;
 	def->scrollbar.left_button = NULL;
 	def->scrollbar.right_button = NULL;
-	def->scrollbar.size = (struct vec2i){0, 0};
-	def->scrollbar.position = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
+	def->position = (struct vec2i){0, 0};
 	def->scrollbar.priority = 0;
 	def->scrollbar.border_size = (struct vec2i){0, 0};
 	def->scrollbar.max_value = 0.0;
@@ -1197,7 +1205,7 @@ static void parse_scrollbar(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->scrollbar.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "slider") == 0) {
 			parse_string_literal(src, &def->scrollbar.slider);
 		} else if (strcasecmp(property, "track") == 0) {
@@ -1207,9 +1215,9 @@ static void parse_scrollbar(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "rightbutton") == 0) {
 			parse_string_literal(src, &def->scrollbar.right_button);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->scrollbar.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->scrollbar.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "priority") == 0) {
 			parse_int_literal(src, &def->scrollbar.priority);
 		} else if (strcasecmp(property, "bordersize") == 0) {
@@ -1250,8 +1258,8 @@ static void parse_checkbox(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_CHECKBOX;
-	def->checkbox.name = NULL;
-	def->checkbox.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	def->checkbox.quad_texture_sprite = NULL;
 	def->checkbox.tooltip = NULL;
 	def->checkbox.tooltip_text = NULL;
@@ -1268,9 +1276,9 @@ static void parse_checkbox(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->checkbox.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->checkbox.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "quadtexturesprite") == 0) {
 			parse_string_literal(src, &def->checkbox.quad_texture_sprite);
 		} else if (strcasecmp(property, "tooltip") == 0) {
@@ -1301,12 +1309,12 @@ static void parse_edit_box(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_EDIT_BOX;
-	def->edit_box.name = NULL;
-	def->edit_box.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	def->edit_box.texture_file = NULL;
 	def->edit_box.font = NULL;
 	def->edit_box.border_size = (struct vec2i){0, 0};
-	def->edit_box.size = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
 	def->edit_box.text = NULL;
 	def->edit_box.orientation = ORIENTATION_LOWER_LEFT;
 	parse_str(src, "{");
@@ -1317,9 +1325,9 @@ static void parse_edit_box(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->edit_box.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->edit_box.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "texturefile") == 0) {
 			parse_string_literal(src, &def->edit_box.texture_file);
 		} else if (strcasecmp(property, "font") == 0) {
@@ -1327,7 +1335,7 @@ static void parse_edit_box(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "bordersize") == 0) {
 			parse_vec2i(src, &def->edit_box.border_size);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->edit_box.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "text") == 0) {
 			parse_string_literal(src, &def->edit_box.text);
 		} else if (strcasecmp(property, "orientation") == 0) {
@@ -1346,10 +1354,10 @@ static void parse_list_box(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_LIST_BOX;
-	def->list_box.name = NULL;
-	def->list_box.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	def->list_box.background = NULL;
-	def->list_box.size = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
 	def->list_box.orientation = ORIENTATION_LOWER_LEFT;
 	def->list_box.spacing = 0;
 	def->list_box.scrollbar_type = NULL;
@@ -1367,13 +1375,13 @@ static void parse_list_box(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->list_box.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->list_box.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "background") == 0) {
 			parse_string_literal(src, &def->list_box.background);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->list_box.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->list_box.orientation);
 		} else if (strcasecmp(property, "spacing") == 0) {
@@ -1406,16 +1414,17 @@ static void parse_eu3_dialog(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_EU3_DIALOG;
-	def->eu3_dialog.name = NULL;
+	def->name = NULL;
 	def->eu3_dialog.background = NULL;
-	def->eu3_dialog.position = (struct vec2i){0, 0};
-	def->eu3_dialog.size = (struct vec2i){0, 0};
+	def->position = (struct vec2i){0, 0};
+	def->size = (struct vec2i){0, 0};
 	def->eu3_dialog.movable = 0;
 	def->eu3_dialog.dont_render = NULL;
 	def->eu3_dialog.horizontal_border = NULL;
 	def->eu3_dialog.vertical_border = NULL;
 	def->eu3_dialog.full_screen = false;
 	def->eu3_dialog.orientation = ORIENTATION_LOWER_LEFT;
+	def->eu3_dialog.children = NULL;
 	parse_str(src, "{");
 
 	peek_char(src, &c, true);
@@ -1424,13 +1433,13 @@ static void parse_eu3_dialog(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->eu3_dialog.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "background") == 0) {
 			parse_string_literal(src, &def->eu3_dialog.background);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->eu3_dialog.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "size") == 0) {
-			parse_vec2i(src, &def->eu3_dialog.size);
+			parse_vec2i(src, &def->size);
 		} else if (strcasecmp(property, "moveable") == 0) {
 			parse_bool_literal(src, &def->eu3_dialog.movable);
 		} else if (strcasecmp(property, "dontrender") == 0) {
@@ -1444,7 +1453,7 @@ static void parse_eu3_dialog(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->eu3_dialog.orientation);
 		} else {
-			parse_gui_type(src, property, &def->scrollbar.children);
+			parse_gui_type(src, property, &def->eu3_dialog.children);
 		}
 		free(property);
 		peek_char(src, &c, true);
@@ -1457,9 +1466,9 @@ static void parse_shield(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_SHIELD;
-	def->shield.name = NULL;
+	def->name = NULL;
 	def->shield.sprite_type = NULL;
-	def->shield.position = (struct vec2i){0, 0};
+	def->position = (struct vec2i){0, 0};
 	def->shield.rotation = 0;
 	parse_str(src, "{");
 
@@ -1469,11 +1478,11 @@ static void parse_shield(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->shield.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "spritetype") == 0) {
 			parse_string_literal(src, &def->shield.sprite_type);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->shield.position);
+			parse_vec2i(src, &def->position);
 		} else if (strcasecmp(property, "rotation") == 0) {
 			parse_float_literal(src, &def->shield.rotation);
 		} else {
@@ -1490,8 +1499,8 @@ static void parse_position(struct source* src, struct gui_defs* def) {
 	char c = '\0';
 
 	def->type = TYPE_POSITION;
-	def->position.name = NULL;
-	def->position.position = (struct vec2i){0, 0};
+	def->name = NULL;
+	def->position = (struct vec2i){0, 0};
 	parse_str(src, "{");
 
 	peek_char(src, &c, true);
@@ -1500,9 +1509,9 @@ static void parse_position(struct source* src, struct gui_defs* def) {
 		parse_identifier(src, &property);
 		parse_str(src, "=");
 		if (strcasecmp(property, "name") == 0) {
-			parse_string_literal(src, &def->position.name);
+			parse_string_literal(src, &def->name);
 		} else if (strcasecmp(property, "position") == 0) {
-			parse_vec2i(src, &def->position.position);
+			parse_vec2i(src, &def->position);
 		} else {
 			error(src, "Unknown property '%s' for position", property);
 		}
@@ -1520,7 +1529,7 @@ static void parse_gui_type(struct source* src, char const* type_name, struct gui
 	} else if (strcasecmp(type_name, "icontype") == 0) {
 		parse_icon(src, def);
 	} else if (strcasecmp(type_name, "guibuttontype") == 0) {
-		parse_gui_button(src, def);
+		parse_button(src, def);
 	} else if (strcasecmp(type_name, "textboxtype") == 0) {
 		parse_text_box(src, def);
 	} else if (strcasecmp(type_name, "instanttextboxtype") == 0) {
@@ -1544,8 +1553,16 @@ static void parse_gui_type(struct source* src, char const* type_name, struct gui
 	} else {
 		error(src, "Unknown gui type_name: %s", type_name);
 	}
-	def->next = *defs;
-	*defs = def;
+	def->next = NULL;
+	if (*defs == NULL) {
+		*defs = def;
+	} else {
+		struct gui_defs* last = *defs;
+		while (last->next != NULL) {
+			last = last->next;
+		}
+		last->next = def;
+	}
 }
 
 static void parse_gui(struct source* src, struct gui_defs** defs) {
@@ -1590,4 +1607,12 @@ void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gu
 	}
 	fclose(src.file);
 	free(src.buf);
+}
+
+void free_sprites(struct sprite_defs* gfx_defs) {
+	fprintf(stderr, "WARNING: free_sprites is not implemented\n");
+}
+
+void free_gui(struct gui_defs* gui_defs) {
+	fprintf(stderr, "WARNING: free_gui is not implemented\n");
 }

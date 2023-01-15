@@ -34,7 +34,7 @@ struct csv_file* csv_open(char const* filename) {
 
 void csv_close(struct csv_file* csv) {
 	if (csv->file != NULL && fclose(csv->file) != 0) {
-		fprintf(stderr, "Warning: Failed to close %s: %s\n", csv->filename, strerror(errno));
+		fprintf(stderr, "WARNING: Failed to close %s: %s\n", csv->filename, strerror(errno));
 	}
 	if (csv->line != NULL) free(csv->line);
 	free(csv);
@@ -141,7 +141,7 @@ bool csv_read_uchar(struct csv_file* csv, unsigned char* value) {
 			success = false;
 		}
 		if (conv_endptr != token_end) {
-			fprintf(stderr, "Warning: Ignoring invalid character '%c' in '%.*s' at %s:%zu:%zu\n",
+			fprintf(stderr, "WARNING: Ignoring invalid character '%c' in '%.*s' at %s:%zu:%zu\n",
 				*conv_endptr, (int) (token_end - token_start), token_start,
 				csv->filename, csv->line_number, csv->column_number);
 		}
