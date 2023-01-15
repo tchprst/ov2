@@ -26,6 +26,33 @@ struct source {
 	size_t buflen;
 };
 
+static void error(struct source* src, char* fmt, ...) {
+	va_list ap;
+
+	fprintf(stderr, "Syntax error in %s:%lu:%lu: ",
+		src->name, src->loc.lineno,src->loc.colno);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	fputc('\n', stderr);
+	exit(EXIT_FAILURE);
+}
+
+static void warning(struct source* src, char* fmt, ...) {
+	va_list ap;
+
+	fprintf(stderr, "Warning in %s:%lu:%lu: ",
+		src->name, src->loc.lineno,src->loc.colno);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	fputc('\n', stderr);
+}
+
 static bool is_whitespace(char c) {
 	return c == ' ' || c == '\r' || c == '\n' || c == '\t';
 }
@@ -71,7 +98,8 @@ static bool peek_char(struct source* src, char* c, bool ignore_whitespace) {
 		if (!read_char(src, c)) return false;
 		if (src->buflen + 2 >= src->bufcap) {
 			src->bufcap += 1;
-			src->buf = realloc(src->buf, src->bufcap); /* TODO: This can fail */
+			src->buf = realloc(src->buf, src->bufcap);
+			if (!src->buf) error(src, "Failed to allocate memory: %s", strerror(errno));
 		}
 		src->buf[src->buflen] = *c;
 		src->buflen++;
@@ -108,60 +136,13 @@ static bool consume_char(struct source* src, char* c, bool ignore_whitespace) {
 	return true;
 }
 
-static bool try_parse_str(
-	struct source* src,
-	char const* str,
-	bool ignore_leading_whitespace
-) {
-	size_t i;
-	char c;
-
-	if (ignore_leading_whitespace) consume_whitespace_and_comments(src);
-
-	for (i = 0; i < strlen(str); i++) {
-		if (i >= src->buflen) {
-			if (!read_char(src, &c)) return false;
-			if (src->buflen + 2 >= src->bufcap) {
-				src->bufcap += 1;
-				src->buf = realloc(src->buf, src->bufcap); /* TODO: This can fail */
-			}
-			src->buf[src->buflen] = c;
-			src->buflen++;
-			src->buf[src->buflen] = 0;
-		} else {
-			c = src->buf[i];
-		}
-		if (c != str[i]) return false;
+static void* calloc_or_die(size_t nmemb, size_t size) {
+	void *result = calloc(nmemb, size);
+	if (result == NULL) {
+		fprintf(stderr, "Failed to allocate: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
 	}
-
-	return true;
-}
-
-static void error(struct source* src, char* fmt, ...) {
-	va_list ap;
-
-	fprintf(stderr, "Syntax error in %s:%lu:%lu: ",
-		src->name, src->loc.lineno,src->loc.colno);
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-
-	fputc('\n', stderr);
-	exit(EXIT_FAILURE);
-}
-
-static void warning(struct source* src, char* fmt, ...) {
-	va_list ap;
-
-	fprintf(stderr, "Warning in %s:%lu:%lu: ",
-		src->name, src->loc.lineno,src->loc.colno);
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-
-	fputc('\n', stderr);
+	return result;
 }
 
 static void parse_char(struct source* src, char target) {
@@ -192,7 +173,7 @@ static void parse_identifier(struct source* src, char** identifier) {
 	char c;
 	size_t size = 2;
 	consume_char(src, &c, true);
-	*identifier = calloc(2, size); /* TODO: This can fail */
+	*identifier = calloc_or_die(2, size);
 	(*identifier)[0] = c;
 	(*identifier)[1] = '\0';
 	for (c = '\0'; peek_char(src, &c, false) && (isalnum(c) || c == '_');) {
@@ -201,7 +182,8 @@ static void parse_identifier(struct source* src, char** identifier) {
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
-		*identifier = realloc(*identifier, size); /* TODO: This can fail */
+		*identifier = realloc(*identifier, size);
+		if (*identifier == NULL) error(src, "Failed to allocate memory for identifier: %s", strerror(errno));
 		(*identifier)[size - 2] = (consume_char(src, &c, false), c);
 		(*identifier)[size - 1] = '\0';
 	}
@@ -212,7 +194,7 @@ static void parse_int_literal(struct source* src, int64_t* i) {
 	char* buf;
 	char* endptr;
 	size_t size = 1;
-	buf = calloc(1, size); /* todo can fail */
+	buf = calloc_or_die(1, size);
 	buf[0] = '\0';
 	consume_whitespace_and_comments(src);
 	for (c = '\0'; peek_char(src, &c, false) && (isdigit(c) || c == '_' || c == '-');) {
@@ -222,7 +204,8 @@ static void parse_int_literal(struct source* src, int64_t* i) {
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
-		buf = realloc(buf, size); /* TODO: This can fail */
+		buf = realloc(buf, size);
+		if (buf == NULL) error(src, "Failed to allocate memory when parsing int literal: %s", strerror(errno));
 		buf[size - 2] = (consume_char(src, &c, false), c);
 		buf[size - 1] = '\0';
 	}
@@ -247,14 +230,15 @@ static void parse_string_literal(struct source* src, char** str) {
 	if (peek_char(src, &c, true) && c == '"') {
 		parse_char(src, '"');
 
-		(*str) = calloc(1, size); /* todo can fail */
+		(*str) = calloc_or_die(1, size);
 		(*str)[0] = '\0';
 		for (c = '\0'; peek_char(src, &c, false) && c != '"';) {
 			if (size == SIZE_MAX) {
 				error(src, "String length exeeds %lu", SIZE_MAX);
 			}
 			size += 1;
-			(*str) = realloc(*str, size); /* TODO: This can fail */
+			(*str) = realloc(*str, size);
+			if (*str == NULL) error(src, "Failed to allocate memory for string literal: %s", strerror(errno));
 			/*if (c == '\\') {
 				consume_char(src, &c, false);
 				consume_char(src, &c, false);
@@ -297,7 +281,7 @@ static void parse_float_literal(struct source* src, double* f) {
 	char* buf;
 	char* endptr;
 	size_t size = 1;
-	buf = calloc(1, size); /* todo can fail */
+	buf = calloc_or_die(1, size);
 	consume_whitespace_and_comments(src);
 	buf[0] = '\0';
 	for (c = '\0'; peek_char(src, &c, false) && (isdigit(c) || c == '_' || c == '-' || c == '.');) {
@@ -307,7 +291,8 @@ static void parse_float_literal(struct source* src, double* f) {
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
-		buf = realloc(buf, size); /* TODO: This can fail */
+		buf = realloc(buf, size);
+		if (buf == NULL) error(src, "Failed to allocate memory when parsing float literal: %s", strerror(errno));
 		buf[size - 2] = (consume_char(src, &c, false), c);
 		buf[size - 1] = '\0';
 	}
@@ -762,7 +747,7 @@ static void parse_sprites(struct source* src, struct sprite_defs** defs) {
 	parse_str(src, "{");
 
 	for (peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
-		struct sprite_defs* def = calloc(1, sizeof(struct sprite_defs)); /* TODO: this can fail */
+		struct sprite_defs* def = calloc_or_die(1, sizeof(struct sprite_defs));
 		char* type = NULL;
 		parse_identifier(src, &type);
 		if (strcasecmp(type, "linecharttype") == 0) {
@@ -1523,7 +1508,7 @@ static void parse_position(struct source* src, struct gui_defs* def) {
 }
 
 static void parse_gui_type(struct source* src, char const* type_name, struct gui_defs** defs) {
-	struct gui_defs* def = calloc(1, sizeof(struct gui_defs)); /* TODO: this can fail */
+	struct gui_defs* def = calloc_or_die(1, sizeof(struct gui_defs));
 	if (strcasecmp(type_name, "windowtype") == 0) {
 		parse_window(src, def);
 	} else if (strcasecmp(type_name, "icontype") == 0) {
@@ -1585,7 +1570,7 @@ void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gu
 	struct source src = {
 		.loc = { .lineno = 1, .colno = 1 },
 		.bufcap = 1,
-		.buf = calloc(1, 1), /* TODO: this can fail */
+		.buf = calloc_or_die(1, 1),
 		.buflen = 0,
 		.file = fopen(path, "r"),  /* TODO: this can fail */
 		.name = path,
