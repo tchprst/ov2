@@ -1,17 +1,18 @@
+#include "province_definitions.h"
+#include "game_state.h"
+#include "ui.h"
+#include "parse.h"
+#include "fs.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
-#include "province_definitions.h"
-#include "game_state.h"
-#include "ui.h"
-#include "parse.h"
 
 int debug_x = 0;
 int debug_y = 0;
@@ -220,8 +221,32 @@ static GLenum init_opengl(void) {
 }
 
 int main(int argc, char** argv) {
-	struct sprite_defs* sprites = parse_gfx("interface/topbar.gfx");
-	struct gui_defs* guis = parse_gui("interface/topbar.gui");
+	{
+		struct sprite_defs* sprites = NULL;
+		struct gui_defs* guis = NULL;
+		DIR* dir;
+		struct dirent* entry;
+		if ((dir = opendir("interface")) == NULL) {
+			fprintf(stderr, "Failed to open interface directory\n");
+			return EXIT_FAILURE;
+		}
+		while ((entry = readdir(dir)) != NULL) {
+			if (entry->d_type == DT_REG) {
+				char* path = malloc(strlen("interface/") + strlen(entry->d_name) + 1);
+				if (path == NULL) {
+					fprintf(stderr, "Failed to allocate memory for path\n");
+					return EXIT_FAILURE;
+				}
+				strcpy(path, "interface/");
+				strcat(path, entry->d_name);
+				if (has_ext(path, ".gfx") || has_ext(path, ".gui")) {
+					parse(path, &sprites, &guis);
+				}
+				free(path);
+			}
+		}
+		closedir(dir);
+	}
 
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;

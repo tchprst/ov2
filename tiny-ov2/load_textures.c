@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "load_textures.h"
 
-static unsigned int load_texture(char const* path) {
-	unsigned int id;
+static GLuint load_texture(char const* path) {
+	GLuint id;
 	if ((id = SOIL_load_OGL_texture(
 		path,
 		SOIL_LOAD_RGBA,
