@@ -1587,9 +1587,14 @@ void parse(
 		.bufcap = 1,
 		.buf = calloc_or_die(1, 1),
 		.buflen = 0,
-		.file = fopen(path, "r"),  /* TODO: this can fail */
+		.file = fopen(path, "r"),
 		.name = path,
 	};
+	if (src.file == NULL) {
+		fprintf(stderr, "Failed to open file '%s': %s\n", path,
+		        strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 	char c = '\0';
 	char* identifier = NULL;
 	if (peek_char(&src, &c , true)) {
