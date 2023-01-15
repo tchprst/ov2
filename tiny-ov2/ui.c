@@ -84,9 +84,10 @@ struct loaded_texture {
 static struct loaded_texture* loaded_textures = NULL;
 
 static GLuint find_texture(const char* name) {
-	for (; loaded_textures != NULL; loaded_textures = loaded_textures->next) {
-		if (strcmp(loaded_textures->name, name) == 0) {
-			return loaded_textures->texture;
+	struct loaded_texture* loaded_texture = loaded_textures;
+	for (; loaded_texture != NULL; loaded_texture = loaded_texture->next) {
+		if (strcmp(loaded_texture->name, name) == 0) {
+			return loaded_texture->texture;
 		}
 	}
 	return 0;
@@ -94,13 +95,13 @@ static GLuint find_texture(const char* name) {
 
 static GLuint find_or_load_texture(char const* name) {
 	GLuint texture = find_texture(name);
-	if (texture == 0) {
-		struct loaded_texture* loaded = malloc(sizeof(struct loaded_texture));
-		loaded->name = name;
-		loaded->texture = load_texture(name);
-		loaded->next = loaded_textures;
-		loaded_textures = loaded;
-		texture = loaded->texture;
+	if (texture == 0 && (texture = load_texture(name), texture != 0)) {
+		struct loaded_texture* new_texture =
+			malloc(sizeof(struct loaded_texture));
+		new_texture->name = name;
+		new_texture->texture = texture;
+		new_texture->next = loaded_textures;
+		loaded_textures = new_texture;
 	}
 	return texture;
 }
@@ -166,15 +167,7 @@ static void render_sprite(struct game_state const* state, struct sprite* sprite,
 
 static void render_simple_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect) {
 	GLint width, height;
-	GLuint texture = find_texture(sprite->sprite.texture_file);
-	if (texture == 0) {
-		struct loaded_texture* loaded = malloc(sizeof(struct loaded_texture));
-		loaded->name = sprite->sprite.texture_file;
-		loaded->texture = load_texture(sprite->sprite.texture_file);
-		loaded->next = loaded_textures;
-		loaded_textures = loaded;
-		texture = loaded->texture;
-	}
+	GLuint texture = find_or_load_texture(sprite->sprite.texture_file);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
@@ -189,6 +182,7 @@ static void render_simple_sprite(struct game_state const* state, struct sprite* 
 	} else {
 		render_texture(texture, &(struct frect) { 0, 0, 1.0f, 1.0f }, dstrect);
 	}
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 /* endregion */
 
