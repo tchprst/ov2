@@ -99,7 +99,10 @@ static bool peek_char(struct source* src, char* c, bool ignore_whitespace) {
 		if (src->buflen + 2 >= src->bufcap) {
 			src->bufcap += 1;
 			src->buf = realloc(src->buf, src->bufcap);
-			if (!src->buf) error(src, "Failed to allocate memory: %s", strerror(errno));
+			if (!src->buf) {
+				error(src, "Failed to allocate memory: %s",
+				      strerror(errno));
+			}
 		}
 		src->buf[src->buflen] = *c;
 		src->buflen++;
@@ -145,15 +148,15 @@ static void* calloc_or_die(size_t nmemb, size_t size) {
 	return result;
 }
 
-static void parse_char(struct source* src, char target) {
-	char c;
-	if (!consume_char(src, &c, true)) {
-		error(src, "Expected '%c', but got EOF", target);
-	}
-	if (c != target) {
-		error(src, "Expected '%c', but got '%c'", target, c);
-	}
-}
+//static void parse_char(struct source* src, char target) {
+//	char c;
+//	if (!consume_char(src, &c, true)) {
+//		error(src, "Expected '%c', but got EOF", target);
+//	}
+//	if (c != target) {
+//		error(src, "Expected '%c', but got '%c'", target, c);
+//	}
+//}
 
 static void parse_str(struct source* src, char const* target) {
 	size_t len = strlen(target);
@@ -161,10 +164,10 @@ static void parse_str(struct source* src, char const* target) {
 	char c;
 	for (i = 0; i < len; i++) {
 		if (!consume_char(src, &c, true)) {
-			error(src, "Expected '%s', but got EOF", target);
+			error(src, "Expected '%s', but got EOF.", target);
 		}
 		if (tolower(c) != tolower(target[i])) {
-			error(src, "Expected '%s', but got '%c'", target, c);
+			error(src, "Expected '%s', but got '%c'.", target, c);
 		}
 	}
 }
@@ -178,14 +181,47 @@ static void parse_identifier(struct source* src, char** identifier) {
 	(*identifier)[1] = '\0';
 	for (c = '\0'; peek_char(src, &c, false) && (isalnum(c) || c == '_');) {
 		if (size == SIZE_MAX) {
-			error(src, "Identifier length exeeds %lu", SIZE_MAX);
+			error(src, "Identifier length exeeds %lu.", SIZE_MAX);
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
 		*identifier = realloc(*identifier, size);
-		if (*identifier == NULL) error(src, "Failed to allocate memory for identifier: %s", strerror(errno));
+		if (*identifier == NULL) {
+			error(src,"Failed to allocate memory for identifier: "
+				  "%s", strerror(errno));
+		}
 		(*identifier)[size - 2] = (consume_char(src, &c, false), c);
 		(*identifier)[size - 1] = '\0';
+	}
+}
+
+static void parse_string_literal(struct source* src, char** str) {
+	char c;
+	size_t size = 1;
+
+	if (peek_char(src, &c, true) && c == '"') {
+		parse_str(src, "\"");
+
+		(*str) = calloc_or_die(1, size);
+		(*str)[0] = '\0';
+		for (c = '\0'; peek_char(src, &c, false) && c != '"';) {
+			if (size == SIZE_MAX) {
+				error(src, "String length exeeds "
+				      "%lu.", SIZE_MAX);
+			}
+			size += 1;
+			(*str) = realloc(*str, size);
+			if (*str == NULL) {
+				error(src, "Failed to allocate memory for "
+				      "string: %s", strerror(errno));
+			}
+			(*str)[size - 2] = (consume_char(src, &c, false), c);
+			(*str)[size - 1] = '\0';
+		}
+
+		parse_str(src, "\"");
+	} else {
+		parse_identifier(src, str);
 	}
 }
 
@@ -197,15 +233,18 @@ static void parse_int_literal(struct source* src, int64_t* i) {
 	buf = calloc_or_die(1, size);
 	buf[0] = '\0';
 	consume_whitespace_and_comments(src);
-	for (c = '\0'; peek_char(src, &c, false) && (isdigit(c) || c == '_' || c == '-');) {
+	for (c = '\0'; peek_char(src, &c, false) && (isdigit(c) || c == '-');) {
 		if (c == '_') continue;
 		if (size == SIZE_MAX) {
-			error(src, "Identifier length exeeds %lu", SIZE_MAX);
+			error(src, "Identifier length exeeds %lu.", SIZE_MAX);
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
 		buf = realloc(buf, size);
-		if (buf == NULL) error(src, "Failed to allocate memory when parsing int literal: %s", strerror(errno));
+		if (buf == NULL) {
+			error(src,"Failed to allocate memory when parsing "
+			      "int: %s", strerror(errno));
+		}
 		buf[size - 2] = (consume_char(src, &c, false), c);
 		buf[size - 1] = '\0';
 	}
@@ -213,68 +252,16 @@ static void parse_int_literal(struct source* src, int64_t* i) {
 	*i = strtol(buf, &endptr, 10);
 
 	if (*i == LONG_MIN || *i == LONG_MAX) {
-		error(src, "Integer literal '%s' is out of range", buf);
+		error(src, "Integer literal '%s' is out of range.", buf);
 	}
 
 	if (*endptr != '\0') {
-		error(src, "Invalid integer literal '%s'", buf);
+		error(src, "Invalid integer literal '%s'.", buf);
 	}
 
 	free(buf);
 }
 
-static void parse_string_literal(struct source* src, char** str) {
-	char c;
-	size_t size = 1;
-
-	if (peek_char(src, &c, true) && c == '"') {
-		parse_char(src, '"');
-
-		(*str) = calloc_or_die(1, size);
-		(*str)[0] = '\0';
-		for (c = '\0'; peek_char(src, &c, false) && c != '"';) {
-			if (size == SIZE_MAX) {
-				error(src, "String length exeeds %lu", SIZE_MAX);
-			}
-			size += 1;
-			(*str) = realloc(*str, size);
-			if (*str == NULL) error(src, "Failed to allocate memory for string literal: %s", strerror(errno));
-			/*if (c == '\\') {
-				consume_char(src, &c, false);
-				consume_char(src, &c, false);
-				assert(c == 'n');
-				(*str)[size - 2] = '\n';
-			} else*/ {
-				(*str)[size - 2] = (consume_char(src, &c, false), c);
-			}
-			(*str)[size - 1] = '\0';
-		}
-
-		parse_char(src, '"');
-	} else {
-		parse_identifier(src, str);
-	}
-}
-
-
-static void parse_bool_literal(struct source* src, bool* value) {
-	char c = '\0';
-	if (peek_char(src, &c, true) && c == '1') {
-		consume_char(src, &c, true);
-		*value = true;
-	} else if (peek_char(src, &c, true) && c == '0') {
-		consume_char(src, &c, true);
-		*value = false;
-	} else if (peek_char(src, &c, true) && c == 'y') {
-		parse_str(src, "yes");
-		*value = true;
-	} else if (peek_char(src, &c, true) && c == 'n') {
-		parse_str(src, "no");
-		*value = false;
-	} else {
-		error(src, "Expected bool, but got '%c'", c);
-	}
-}
 
 static void parse_float_literal(struct source* src, double* f) {
 	char c;
@@ -284,15 +271,19 @@ static void parse_float_literal(struct source* src, double* f) {
 	buf = calloc_or_die(1, size);
 	consume_whitespace_and_comments(src);
 	buf[0] = '\0';
-	for (c = '\0'; peek_char(src, &c, false) && (isdigit(c) || c == '_' || c == '-' || c == '.');) {
+	for (c = '\0'; peek_char(src, &c, false)
+	               && (isdigit(c) || c == '-' || c == '.');) {
 		if (c == '_') continue;
 		if (size == SIZE_MAX) {
-			error(src, "Identifier length exeeds %lu", SIZE_MAX);
+			error(src, "Identifier length exeeds %lu.", SIZE_MAX);
 			exit(EXIT_FAILURE);
 		}
 		size += 1;
 		buf = realloc(buf, size);
-		if (buf == NULL) error(src, "Failed to allocate memory when parsing float literal: %s", strerror(errno));
+		if (buf == NULL) {
+			error(src, "Failed to allocate memory when "
+				   "parsing float: %s", strerror(errno));
+		}
 		buf[size - 2] = (consume_char(src, &c, false), c);
 		buf[size - 1] = '\0';
 	}
@@ -304,36 +295,56 @@ static void parse_float_literal(struct source* src, double* f) {
 	}
 
 	if (*endptr != '\0') {
-		error(src, "Invalid float literal '%s'", buf);
+		error(src, "Invalid float literal '%s'.", buf);
+	}
+}
+
+static void parse_bool_literal(struct source* src, bool* value) {
+	char c = '\0';
+	if (peek_char(src, &c, true) && c == '1') {
+		parse_str(src, "1");
+		*value = true;
+	} else if (peek_char(src, &c, true) && c == '0') {
+		parse_str(src, "0");
+		*value = false;
+	} else if (peek_char(src, &c, true) && c == 'y') {
+		parse_str(src, "yes");
+		*value = true;
+	} else if (peek_char(src, &c, true) && c == 'n') {
+		parse_str(src, "no");
+		*value = false;
+	} else {
+		error(src, "Expected '0', '1', 'yes' or 'no', "
+		           "but got '%c'.", c);
 	}
 }
 
 static void parse_vec2i(struct source* src, struct vec2i* vec2) {
 	char c = '\0';
 	char* property = NULL;
-	parse_char(src, '{');
+	parse_str(src, "{");
 	for (peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
 		parse_identifier(src, &property);
 		if (strcasecmp(property, "x") == 0) {
-			parse_char(src, '=');
+			parse_str(src, "=");
 			parse_int_literal(src, &vec2->x);
 		} else if (strcasecmp(property, "y") == 0) {
-			parse_char(src, '=');
+			parse_str(src, "=");
 			parse_int_literal(src, &vec2->y);
 		} else {
-			error(src, "Unknown property '%s' for vec2", property);
+			error(src, "Unknown property '%s' for vec2.", property);
 		}
 		free(property);
 	}
-	parse_char(src, '}');
+	parse_str(src, "}");
 }
 
 static void parse_rgb(struct source* src, struct rgb* rgb) {
-	parse_char(src, '{');
+	parse_str(src, "{");
 	parse_float_literal(src, &rgb->r);
 	parse_float_literal(src, &rgb->g);
 	parse_float_literal(src, &rgb->b);
-	parse_char(src, '}');
+	parse_str(src, "}");
 }
 
 static void parse_click_sound(struct source* src, enum click_sound* click_sound) {
@@ -346,7 +357,7 @@ static void parse_click_sound(struct source* src, enum click_sound* click_sound)
 	} else if (strcasecmp(identifier, "start_game") == 0) {
 		*click_sound = CLICK_SOUND_START_GAME;
 	} else {
-		error(src, "Unknown click sound: %s", identifier);
+		error(src, "Unknown click sound '%s'.", identifier);
 	}
 	free(identifier);
 }
@@ -361,7 +372,7 @@ static void parse_load_type(struct source* src, enum load_type* load_type) {
 	} else if (strcasecmp(identifier, "frontend") == 0) {
 		*load_type = LOAD_TYPE_FRONTEND;
 	} else {
-		error(src, "Unknown load type: %s", identifier);
+		error(src, "Unknown load type '%s'.", identifier);
 	}
 }
 
@@ -392,7 +403,7 @@ static void parse_line_chart(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
 			parse_bool_literal(src, &def->line_chart.always_transparent);
 		} else {
-			error(src, "Unknown property '%s' for line_chart_type", property);
+			error(src, "Unknown property '%s' for line_chart_type.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -439,7 +450,7 @@ static void parse_sprite(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "loadtype") == 0) {
 			parse_load_type(src, &def->sprite.load_type);
 		} else {
-			error(src, "Unknown property '%s' for sprite", property);
+			error(src, "Unknown property '%s' for sprite.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -477,7 +488,7 @@ static void parse_masked_shield(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "flipv") == 0) {
 			parse_bool_literal(src, &def->masked_shield.flipv);
 		} else {
-			error(src, "Unknown property '%s' for masked shield", property);
+			error(src, "Unknown property '%s' for masked shield.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -527,7 +538,7 @@ static void parse_progress_bar(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "loadtype") == 0) {
 			parse_load_type(src, &def->progress_bar.load_type);
 		} else {
-			error(src, "Unknown property '%s' for progress bar", property);
+			error(src, "Unknown property '%s' for progress bar.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -565,7 +576,7 @@ static void parse_cornered_tile_sprite(struct source* src, struct sprite_defs* d
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
 			parse_bool_literal(src, &def->cornered_tile_sprite.always_transparent);
 		} else {
-			error(src, "Unknown property '%s' for cornered tile sprite", property);
+			error(src, "Unknown property '%s' for cornered tile sprite.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -606,7 +617,7 @@ static void parse_text_sprite(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "clicksound") == 0) {
 			parse_click_sound(src, &def->text_sprite.click_sound);
 		} else {
-			error(src, "Unknown property '%s' for text sprite", property);
+			error(src, "Unknown property '%s' for text sprite.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -632,7 +643,7 @@ static void parse_bar_chart(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_vec2i(src, &def->bar_chart.size);
 		} else {
-			error(src, "Unknown property '%s' for bar chart", property);
+			error(src, "Unknown property '%s' for bar chart.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -658,7 +669,7 @@ static void parse_pie_chart(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_int_literal(src, &def->pie_chart.size);
 		} else {
-			error(src, "Unknown property '%s' for pie chart", property);
+			error(src, "Unknown property '%s' for pie chart.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -696,7 +707,7 @@ static void parse_tile_sprite(struct source* src, struct sprite_defs* def) {
 		} else if (strcasecmp(property, "size") == 0) {
 			parse_vec2i(src, &def->tile_sprite.size);
 		} else {
-			error(src, "Unknown property '%s' for tile sprite", property);
+			error(src, "Unknown property '%s' for tile sprite.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -734,7 +745,7 @@ static void parse_scrolling_sprite(struct source* src, struct sprite_defs* def) 
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
 			parse_bool_literal(src, &def->scrolling_sprite.always_transparent);
 		} else {
-			error(src, "Unknown property '%s' for scrolling sprite", property);
+			error(src, "Unknown property '%s' for scrolling sprite.", property);
 		}
 		peek_char(src, &c, true);
 	}
@@ -771,7 +782,7 @@ static void parse_sprites(struct source* src, struct sprite_defs** defs) {
 		} else if (strcasecmp(type, "scrollingsprite") == 0) {
 			parse_scrolling_sprite(src, def);
 		} else  {
-			error(src, "Unknown sprite type: %s", type);
+			error(src, "Unknown sprite type '%s'.", type);
 		}
 		def->next = NULL;
 		if (*defs == NULL) {
@@ -808,7 +819,7 @@ static void parse_gui_format(struct source* src, enum gui_format* format) {
 	} else if (strcasecmp(identifier, "justified") == 0) {
 		*format = GUI_FORMAT_JUSTIFIED;
 	} else {
-		error(src, "Unknown text box format: %s", identifier);
+		error(src, "Unknown text box format '%s'.", identifier);
 	}
 }
 
@@ -830,9 +841,9 @@ static void parse_gui_orientation(struct source* src, enum gui_orientation* orie
 	} else if (strcasecmp(str, "lower_right") == 0) {
 		*orientation = ORIENTATION_LOWER_RIGHT;
 	} else if (strcasecmp(str, "upperl_left") == 0) {
-		warning(src, "Ignoring misspelled orientation '%s'", str);
+		warning(src, "Ignoring misspelled orientation '%s'.", str);
 	} else {
-		error(src, "Unknown orientation: %s", str);
+		error(src, "Unknown orientation '%s'.", str);
 	}
 	free(str);
 }
@@ -931,7 +942,7 @@ static void parse_icon(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "scale") == 0) {
 			parse_float_literal(src, &def->icon.scale);
 		} else {
-			error(src, "Unknown property '%s' for icon", property);
+			error(src, "Unknown property '%s' for icon.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -999,7 +1010,7 @@ static void parse_button(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "format") == 0) {
 			parse_gui_format(src, &def->button.format);
 		} else {
-			error(src, "Unknown property '%s' for button", property);
+			error(src, "Unknown property '%s' for button.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1053,7 +1064,7 @@ static void parse_text_box(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->text_box.orientation);
 		} else {
-			error(src, "Unknown property '%s' for text box", property);
+			error(src, "Unknown property '%s' for text box.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1110,7 +1121,7 @@ static void parse_instant_text_box(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
 			parse_bool_literal(src, &def->instant_text_box.always_transparent);
 		} else {
-			error(src, "Unknown property '%s' for instant text box", property);
+			error(src, "Unknown property '%s' for instant text box.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1149,7 +1160,7 @@ static void parse_overlapping_elements_box(struct source* src, struct gui_defs* 
 		} else if (strcasecmp(property, "spacing") == 0) {
 			parse_float_literal(src, &def->overlapping_elements_box.spacing);
 		} else {
-			error(src, "Unknown property '%s' for overlapping elements box", property);
+			error(src, "Unknown property '%s' for overlapping elements box.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1281,7 +1292,7 @@ static void parse_checkbox(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "shortcut") == 0) {
 			parse_string_literal(src, &def->checkbox.shortcut);
 		} else {
-			error(src, "Unknown property '%s' for checkbox", property);
+			error(src, "Unknown property '%s' for checkbox.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1326,7 +1337,7 @@ static void parse_edit_box(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "orientation") == 0) {
 			parse_gui_orientation(src, &def->edit_box.orientation);
 		} else {
-			error(src, "Unknown property '%s' for edit box", property);
+			error(src, "Unknown property '%s' for edit box.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1386,7 +1397,7 @@ static void parse_list_box(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
 			parse_bool_literal(src, &def->list_box.always_transparent);
 		} else {
-			error(src, "Unknown property '%s' for list box", property);
+			error(src, "Unknown property '%s' for list box.", property);
 		}
 		peek_char(src, &c, true);
 		free(property);
@@ -1471,7 +1482,7 @@ static void parse_shield(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "rotation") == 0) {
 			parse_float_literal(src, &def->shield.rotation);
 		} else {
-			error(src, "Unknown property '%s' for shield", property);
+			error(src, "Unknown property '%s' for shield.", property);
 		}
 		free(property);
 		peek_char(src, &c, true);
@@ -1498,7 +1509,7 @@ static void parse_position(struct source* src, struct gui_defs* def) {
 		} else if (strcasecmp(property, "position") == 0) {
 			parse_vec2i(src, &def->position);
 		} else {
-			error(src, "Unknown property '%s' for position", property);
+			error(src, "Unknown property '%s' for position.", property);
 		}
 		free(property);
 		peek_char(src, &c, true);
@@ -1536,7 +1547,7 @@ static void parse_gui_type(struct source* src, char const* type_name, struct gui
 	} else if (strcasecmp(type_name, "positiontype") == 0) {
 		parse_position(src, def);
 	} else {
-		error(src, "Unknown gui type_name: %s", type_name);
+		error(src, "Unknown gui type_name '%s'.", type_name);
 	}
 	def->next = NULL;
 	if (*defs == NULL) {
@@ -1566,7 +1577,11 @@ static void parse_gui(struct source* src, struct gui_defs** defs) {
 }
 /* endregion */
 
-void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gui_defs) {
+void parse(
+	char const* path,
+	struct sprite_defs** gfx_defs,
+	struct gui_defs** gui_defs
+) {
 	struct source src = {
 		.loc = { .lineno = 1, .colno = 1 },
 		.bufcap = 1,
@@ -1579,13 +1594,14 @@ void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gu
 	char* identifier = NULL;
 	if (peek_char(&src, &c , true)) {
 		parse_identifier(&src, &identifier);
-		parse_char(&src, '=');
+		parse_str(&src, "=");
 		if (strcasecmp(identifier, "spritetypes") == 0) {
 			parse_sprites(&src, gfx_defs);
 		} else if (strcasecmp(identifier, "guitypes") == 0) {
 			parse_gui(&src, gui_defs);
 		} else {
-			warning(&src, "Ignoring unknown file type: %s", identifier);
+			warning(&src, "Ignoring unknown file type "
+			        "'%s'.", identifier);
 		}
 	} else {
 		/* Ignoring empty files */
@@ -1595,9 +1611,9 @@ void parse(char const* path, struct sprite_defs** gfx_defs, struct gui_defs** gu
 }
 
 void free_sprites(struct sprite_defs* gfx_defs) {
-	fprintf(stderr, "WARNING: free_sprites is not implemented\n");
+	fprintf(stderr, "WARNING: free_sprites is not implemented.\n");
 }
 
 void free_gui(struct gui_defs* gui_defs) {
-	fprintf(stderr, "WARNING: free_gui is not implemented\n");
+	fprintf(stderr, "WARNING: free_gui is not implemented.\n");
 }
