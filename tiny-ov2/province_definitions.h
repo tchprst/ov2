@@ -24,4 +24,4 @@ void free_province_definitions(
 	size_t count
 );
 
-#endif //OV2_PROVINCE_DEFINITIONS_H
+#endif /*OV2_PROVINCE_DEFINITIONS_H*/

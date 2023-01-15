@@ -13,7 +13,7 @@ enum current_window {
 	WINDOW_POPULATION,
 	WINDOW_PRODUCTION,
 	WINDOW_TECHNOLOGY,
-	WINDOW_TRADE,
+	WINDOW_TRADE
 };
 
 /* TODO: Separate into actual game state and UI state*/
@@ -36,4 +36,4 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height);
 
 void free_game_state(struct game_state* game_state);
 
-#endif //OV2_GAME_STATE_H
+#endif /*OV2_GAME_STATE_H*/

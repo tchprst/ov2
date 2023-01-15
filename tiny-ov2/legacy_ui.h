@@ -13,4 +13,4 @@ void render_topbar(struct game_state const* game_state);
 
 void load_ui(char const* path);
 
-#endif //OV2_LEGACY_UI_H
+#endif /*OV2_LEGACY_UI_H*/

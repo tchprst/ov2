@@ -1579,21 +1579,21 @@ void parse(
 	struct sprite** sprites,
 	struct ui_widget** widgets
 ) {
-	struct source src = {
-		.loc = { .lineno = 1, .colno = 1 },
-		.bufcap = 1,
-		.buf = calloc_or_die(1, 1),
-		.buflen = 0,
-		.file = fopen(path, "r"),
-		.name = path,
-	};
+	struct source src;
+	char c = '\0';
+	char* identifier = NULL;
+	src.loc.lineno = 1;
+	src.loc.colno = 1;
+	src.bufcap = 1;
+	src.buf = calloc_or_die(1, 1);
+	src.buflen = 0;
+	src.file = fopen(path, "r");
+	src.name = path;
 	if (src.file == NULL) {
 		fprintf(stderr, "Failed to open file '%s': %s\n", path,
 		        strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	char c = '\0';
-	char* identifier = NULL;
 	if (peek_char(&src, &c , true)) {
 		parse_identifier(&src, &identifier);
 		parse_str(&src, "=");

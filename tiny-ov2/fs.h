@@ -10,4 +10,4 @@
 
 bool has_ext(char const* path, char const* ext);
 
-#endif //OV2_FS_H
+#endif /*OV2_FS_H*/

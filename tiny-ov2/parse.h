@@ -18,7 +18,7 @@ struct vec2i {
 enum click_sound {
 	CLICK_SOUND_CLICK,
 	CLICK_SOUND_CLOSE_WINDOW,
-	CLICK_SOUND_START_GAME,
+	CLICK_SOUND_START_GAME
 };
 
 /* region sprites */
@@ -26,7 +26,7 @@ enum click_sound {
 enum sprite_load_type {
 	SPRITE_LOAD_TYPE_INGAME,
 	SPRITE_LOAD_TYPE_BACKEND,
-	SPRITE_LOAD_TYPE_FRONTEND,
+	SPRITE_LOAD_TYPE_FRONTEND
 };
 
 struct simple_sprite {
@@ -119,7 +119,7 @@ struct sprite {
 		TYPE_BAR_CHART,
 		TYPE_PIE_CHART,
 		TYPE_TILE_SPRITE,
-		TYPE_SCROLLING_SPRITE,
+		TYPE_SCROLLING_SPRITE
 	} type;
 	union {
 		struct simple_sprite sprite;
@@ -149,14 +149,14 @@ enum ui_orientation {
 	UI_ORIENTATION_CENTER,
 	UI_ORIENTATION_CENTER_DOWN,
 	UI_ORIENTATION_UPPER_RIGHT,
-	UI_ORIENTATION_LOWER_RIGHT,
+	UI_ORIENTATION_LOWER_RIGHT
 };
 
 enum ui_format {
 	UI_FORMAT_LEFT,
 	UI_FORMAT_CENTER,
 	UI_FORMAT_RIGHT,
-	UI_FORMAT_JUSTIFIED,
+	UI_FORMAT_JUSTIFIED
 };
 
 struct ui_window {
@@ -315,7 +315,7 @@ struct ui_widget {
 		TYPE_LIST_BOX,
 		TYPE_EU3_DIALOG,
 		TYPE_SHIELD,
-		TYPE_POSITION,
+		TYPE_POSITION
 	} type;
 	union {
 		struct ui_window window;
@@ -341,4 +341,4 @@ void free_sprites(struct sprite* sprites);
 
 void free_widgets(struct ui_widget* widgets);
 
-#endif //OV2_PARSE_H
+#endif /*OV2_PARSE_H*/

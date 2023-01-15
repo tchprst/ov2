@@ -47,9 +47,9 @@ static void replace_tga_extension_with_dds(char* c) {
 }
 
 static GLuint load_texture(char const* path) {
+	GLuint id;
 	char* corrected_path = strdup(path);
 	replace_backslashes_with_forward_slashes(corrected_path);
-	GLuint id;
 	if ((id = SOIL_load_OGL_texture(
 		corrected_path,
 		SOIL_LOAD_RGBA,

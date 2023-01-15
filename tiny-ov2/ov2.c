@@ -220,9 +220,9 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "Failed to create OpenGL context: %s\n", SDL_GetError());
 		exit_code = EXIT_FAILURE;
 	} else {
-		SDL_SetWindowResizable(window, SDL_TRUE); /* This is done here instead of on creation to make it easier for me to debug with my wm */
 		GLenum error = GL_NO_ERROR;
 		struct game_state* game_state;
+		SDL_SetWindowResizable(window, SDL_TRUE); /* This is done here instead of on creation to make it easier for me to debug with my wm */
 		if (SDL_GL_SetSwapInterval(1) != 0) {
 			fprintf(stderr, "WARNING: Failed to set vsync: %s\n", SDL_GetError());
 		}
