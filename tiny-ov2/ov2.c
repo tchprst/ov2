@@ -220,8 +220,8 @@ static GLenum init_opengl(void) {
 }
 
 int main(int argc, char** argv) {
-	parse_gfx("interface/topbar.gfx");
-	parse_gui("interface/topbar.gui");
+	struct sprite_defs* sprites = parse_gfx("interface/topbar.gfx");
+	struct gui_defs* guis = parse_gui("interface/topbar.gui");
 
 	int exit_code = EXIT_SUCCESS;
 	SDL_Window* window = NULL;

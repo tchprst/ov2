@@ -197,7 +197,7 @@ static void parse_constant_integer(struct source* src, int64_t* i) {
 	size_t size = 1;
 	buf = calloc(1, size); /* todo can fail */
 	buf[0] = '\0';
-	for (c = '\0'; peek_char(src, &c, true) && (isdigit(c) || c == '_');) {
+	for (c = '\0'; peek_char(src, &c, true) && (isdigit(c) || c == '_' || c == '-');) {
 		if (c == '_') continue;
 		if (size == SIZE_MAX) {
 			error(src, "Identifier length exeeds %lu\n", SIZE_MAX);
@@ -527,7 +527,336 @@ struct sprite_defs* parse_gfx(char const* path) {
 
 /* region parse_gui */
 
-struct gui_types* parse_gui(char const* path) {
+void parse_gui_type(struct source* src, char const* type_name, struct gui_defs** defs);
+
+void parse_window(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_WINDOW;
+	def->window.name = NULL;
+	def->window.background = NULL;
+	def->window.position = (struct vec2i){0, 0};
+	def->window.size = (struct vec2i){0, 0};
+	def->window.moveable = 0;
+	def->window.dont_render = NULL;
+	def->window.horizontal_border = NULL;
+	def->window.vertical_border = NULL;
+	def->window.full_screen = false;
+	def->window.children = NULL;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->window.name);
+		} else if (strcmp(property, "backGround") == 0) {
+			parse_constant_string(src, &def->window.background);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->window.position);
+		} else if (strcmp(property, "size") == 0) {
+			parse_vec2(src, &def->window.size);
+		} else if (strcmp(property, "moveable") == 0) {
+			parse_constant_integer(src, &def->window.moveable);
+		} else if (strcmp(property, "dontRender") == 0) {
+			parse_constant_string(src, &def->window.dont_render);
+		} else if (strcmp(property, "horizontalBorder") == 0) {
+			parse_constant_string(src, &def->window.horizontal_border);
+		} else if (strcmp(property, "verticalBorder") == 0) {
+			parse_constant_string(src, &def->window.vertical_border);
+		} else if (strcmp(property, "fullScreen") == 0) {
+			parse_constant_bool(src, &def->window.full_screen);
+		} else {
+			parse_gui_type(src, property, &def->window.children);
+		}
+		free(property);
+		peek_char(src, &c, true);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_icon(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_ICON;
+	def->icon.name = NULL;
+	def->icon.sprite = NULL;
+	def->icon.position = (struct vec2i){0, 0};
+	def->icon.orientation = NULL;
+	def->icon.frame = 0;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->icon.name);
+		} else if (strcmp(property, "spriteType") == 0) {
+			parse_constant_string(src, &def->icon.sprite);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->icon.position);
+		} else if (strcmp(property, "Orientation") == 0) {
+			parse_constant_string(src, &def->icon.orientation);
+		} else if (strcmp(property, "frame") == 0) {
+			parse_constant_integer(src, &def->icon.frame);
+		} else {
+			error(src, "Unknown property '%s' for icon\n", property);
+		}
+		peek_char(src, &c, true);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_constant_clicksound(struct source* src, enum click_sound* click_sound) {
+	char* identifier = NULL;
+	parse_identifier(src, &identifier);
+	if (strcmp(identifier, "click") == 0) {
+		*click_sound = CLICK_SOUND_CLICK;
+	} else if (strcmp(identifier, "window_close") == 0) {
+		*click_sound = CLICK_SOUND_CLOSE_WINDOW;
+	} else {
+		error(src, "Unknown click sound: %s\n", identifier);
+	}
+	free(identifier);
+}
+
+void parse_gui_button(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_GUI_BUTTON;
+	def->gui_button.name = NULL;
+	def->gui_button.position = (struct vec2i){0, 0};
+	def->gui_button.quad_texture_sprite = NULL;
+	def->gui_button.button_text = NULL;
+	def->gui_button.button_font = NULL;
+	def->gui_button.click_sound = CLICK_SOUND_CLICK;
+	def->gui_button.orientation = NULL;
+	def->gui_button.tooltip = NULL;
+	def->gui_button.tooltip_text = NULL;
+	def->gui_button.delayed_tooltip_text = NULL;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->window.name);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->gui_button.position);
+		} else if (strcmp(property, "quadTextureSprite") == 0) {
+			parse_constant_string(src, &def->gui_button.quad_texture_sprite);
+		} else if (strcmp(property, "buttonText") == 0) {
+			parse_constant_string(src, &def->gui_button.button_text);
+		} else if (strcmp(property, "buttonFont") == 0) {
+			parse_constant_string(src, &def->gui_button.button_font);
+		} else if (strcmp(property, "shortcut") == 0) {
+			parse_constant_string(src, &def->gui_button.shortcut);
+		} else if (strcmp(property, "clicksound") == 0) {
+			parse_constant_clicksound(src, &def->gui_button.click_sound);
+		} else if (strcmp(property, "Orientation") == 0) {
+			parse_constant_string(src, &def->gui_button.orientation);
+		} else if (strcmp(property, "tooltip") == 0) {
+			parse_constant_string(src, &def->gui_button.tooltip);
+		} else if (strcmp(property, "tooltipText") == 0) {
+			parse_constant_string(src, &def->gui_button.tooltip_text);
+		} else if (strcmp(property, "delayedTooltipText") == 0) {
+			parse_constant_string(src, &def->gui_button.delayed_tooltip_text);
+		} else {
+			error(src, "Unknown property '%s' for button\n", property);
+		}
+		peek_char(src, &c, true);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_gui_format(struct source* src, enum gui_format* format) {
+	char* identifier = NULL;
+	parse_identifier(src, &identifier);
+	if (strcmp(identifier, "left") == 0) {
+		*format = GUI_FORMAT_LEFT;
+	} else if (strcmp(identifier, "centre") == 0) {
+		*format = GUI_FORMAT_CENTER;
+	} else if (strcmp(identifier, "right") == 0) {
+		*format = GUI_FORMAT_RIGHT;
+	} else {
+		error(src, "Unknown text box format: %s\n", identifier);
+	}
+}
+
+void parse_text_box(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_TEXT_BOX;
+	def->text_box.name = NULL;
+	def->text_box.position = (struct vec2i){0, 0};
+	def->text_box.font = NULL;
+	def->text_box.border_size = (struct vec2i){0, 0};
+	def->text_box.text = NULL;
+	def->text_box.max_width = 0;
+	def->text_box.max_height = 0;
+	def->text_box.format = GUI_FORMAT_LEFT;
+	def->text_box.fixed_size = false;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->text_box.name);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->text_box.position);
+		} else if (strcmp(property, "font") == 0) {
+			parse_constant_string(src, &def->text_box.font);
+		} else if (strcmp(property, "borderSize") == 0) {
+			parse_vec2(src, &def->text_box.border_size);
+		} else if (strcmp(property, "text") == 0) {
+			parse_constant_string(src, &def->text_box.text);
+		} else if (strcmp(property, "maxWidth") == 0) {
+			parse_constant_integer(src, &def->text_box.max_width);
+		} else if (strcmp(property, "maxHeight") == 0) {
+			parse_constant_integer(src, &def->text_box.max_height);
+		} else if (strcmp(property, "format") == 0) {
+			parse_gui_format(src, &def->text_box.format);
+		} else if (strcmp(property, "fixedsize") == 0) {
+			parse_constant_bool(src, &def->text_box.fixed_size);
+		} else {
+			error(src, "Unknown property '%s' for text box\n", property);
+		}
+		peek_char(src, &c, true);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_instant_text_box(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_INSTANT_TEXT_BOX;
+	def->instant_text_box.name = NULL;
+	def->instant_text_box.position = (struct vec2i){0, 0};
+	def->instant_text_box.font = NULL;
+	def->instant_text_box.border_size = (struct vec2i){0, 0};
+	def->instant_text_box.text = NULL;
+	def->instant_text_box.max_width = 0;
+	def->instant_text_box.max_height = 0;
+	def->instant_text_box.format = GUI_FORMAT_LEFT;
+	def->instant_text_box.fixed_size = false;
+	def->instant_text_box.orientation = NULL;
+	def->instant_text_box.texture_file = NULL;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->instant_text_box.name);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->instant_text_box.position);
+		} else if (strcmp(property, "font") == 0) {
+			parse_constant_string(src, &def->instant_text_box.font);
+		} else if (strcmp(property, "borderSize") == 0) {
+			parse_vec2(src, &def->instant_text_box.border_size);
+		} else if (strcmp(property, "text") == 0) {
+			parse_constant_string(src, &def->instant_text_box.text);
+		} else if (strcmp(property, "maxWidth") == 0) {
+			parse_constant_integer(src, &def->instant_text_box.max_width);
+		} else if (strcmp(property, "maxHeight") == 0) {
+			parse_constant_integer(src, &def->instant_text_box.max_height);
+		} else if (strcmp(property, "format") == 0) {
+			parse_gui_format(src, &def->instant_text_box.format);
+		} else if (strcmp(property, "fixedsize") == 0) {
+			parse_constant_bool(src, &def->instant_text_box.fixed_size);
+		} else if (strcmp(property, "orientation") == 0) {
+			parse_constant_string(src, &def->instant_text_box.orientation);
+		} else if (strcmp(property, "textureFile") == 0) {
+			parse_constant_string(src, &def->instant_text_box.texture_file);
+		} else {
+			error(src, "Unknown property '%s' for instant text box\n", property);
+		}
+		peek_char(src, &c, true);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_overlapping_elements_box(struct source* src, struct gui_defs* def) {
+	char c = '\0';
+
+	def->type = TYPE_OVERLAPPING_ELEMENTS_BOX;
+	def->overlapping_elements_box.name = NULL;
+	def->overlapping_elements_box.position = (struct vec2i){0, 0};
+	def->overlapping_elements_box.size = (struct vec2i){0, 0};
+	def->overlapping_elements_box.orientation = NULL;
+	def->overlapping_elements_box.format = GUI_FORMAT_LEFT;
+	def->overlapping_elements_box.spacing = 0;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcmp(property, "name") == 0) {
+			parse_constant_string(src, &def->overlapping_elements_box.name);
+		} else if (strcmp(property, "position") == 0) {
+			parse_vec2(src, &def->overlapping_elements_box.position);
+		} else if (strcmp(property, "size") == 0) {
+			parse_vec2(src, &def->overlapping_elements_box.size);
+		} else if (strcmp(property, "Orientation") == 0) {
+			parse_constant_string(src, &def->overlapping_elements_box.orientation);
+		} else if (strcmp(property, "format") == 0) {
+			parse_gui_format(src, &def->overlapping_elements_box.format);
+		} else if (strcmp(property, "spacing") == 0) {
+			parse_constant_float(src, &def->overlapping_elements_box.spacing);
+		} else {
+			error(src, "Unknown property '%s' for overlapping elements box\n", property);
+		}
+		peek_char(src, &c, true);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+void parse_gui_type(struct source* src, char const* type_name, struct gui_defs** defs) {
+	struct gui_defs* def = calloc(1, sizeof(struct gui_defs)); /* TODO: this can fail */
+	if (strcmp(type_name, "windowType") == 0) {
+		parse_window(src, def);
+	} else if (strcmp(type_name, "iconType") == 0) {
+		parse_icon(src, def);
+	} else if (strcmp(type_name, "guiButtonType") == 0) {
+		parse_gui_button(src, def);
+	} else if (strcmp(type_name, "textBoxType") == 0) {
+		parse_text_box(src, def);
+	} else if (strcmp(type_name, "instantTextBoxType") == 0) {
+		parse_instant_text_box(src, def);
+	} else if (strcmp(type_name, "OverlappingElementsBoxType") == 0) {
+		parse_overlapping_elements_box(src, def);
+	} else {
+		error(src, "Unknown gui type_name: %s\n", type_name);
+	}
+	def->next = *defs;
+	*defs = def;
+}
+
+struct gui_defs* parse_gui(char const* path) {
 	struct source src = {
 		.loc = { .lineno = 1, .colno = 1 },
 		.bufcap = 1,
@@ -535,7 +864,7 @@ struct gui_types* parse_gui(char const* path) {
 		.buflen = 0,
 		.file = fopen(path, "r"),  /* TODO: this can fail */
 	};
-	struct gui_types* gui_types = NULL;
+	struct gui_defs* defs = NULL;
 	char c = '\0';
 
 	parse_str(&src, "guiTypes");
@@ -543,32 +872,17 @@ struct gui_types* parse_gui(char const* path) {
 	parse_str(&src, "{");
 
 	for (peek_char(&src, &c, true); c != '}'; peek_char(&src, &c, true)) {
-		struct gui_types* gui_type = calloc(1, sizeof(struct gui_types)); /* TODO: this can fail */
-		char* type = NULL;
-		parse_identifier(&src, &type);
-		if (strcmp(type, "windowType") == 0) {
-			/*parse_window(&src, gui_type);*/error(&src, "windowType not implemented yet\n");
-		} if (strcmp(type, "iconType") == 0) {
-			/*parse_icon(&src, gui_type);*/error(&src, "iconType not implemented yet\n");
-		} if (strcmp(type, "guiButtonType") == 0) {
-			/*parse_gui_button(&src, gui_type);*/error(&src, "guiButtonType not implemented yet\n");
-		} if (strcmp(type, "textBoxType") == 0) {
-			/*parse_text_box(&src, gui_type);*/error(&src, "textBoxType not implemented yet\n");
-		} if (strcmp(type, "instantTextBoxType") == 0) {
-			/*parse_instant_text_box(&src, gui_type);*/error(&src, "instantTextBoxType not implemented yet\n");
-		} else {
-			error(&src, "Unknown gui type: %s\n", type);
-		}
-		gui_type->next = gui_types;
-		gui_types = gui_type;
-
-		free(type);
+		char* property = NULL;
+		parse_identifier(&src, &property);
+		parse_str(&src, "=");
+		parse_gui_type(&src, property, &defs);
+		free(property);
 	}
 
 	parse_str(&src, "}");
 
 	fclose(src.file);
 	free(src.buf);
-	return gui_types;
+	return defs;
 }
 /* endregion */
