@@ -1,0 +1,261 @@
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_video.h>
+#include <SDL2/SDL_opengl.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
+#include "province_definitions.h"
+
+struct game_state {
+    size_t province_definitions_count;
+    struct province_definition* province_definitions;
+    unsigned int terrain_texture;
+    unsigned int provinces_texture;
+
+    float camera[3];
+    float is_dragging;
+};
+
+/* returns false if a quit has been requested */
+static bool handle_key_down(SDL_Keysym* keysym) {
+	bool should_quit = false;
+
+	switch (keysym->sym) {
+		case SDLK_ESCAPE:
+		case SDLK_q:
+			should_quit = true;
+			break;
+		case SDLK_SPACE:
+			/*should_rotate = !should_rotate;*/
+			break;
+		default:
+			break;
+	}
+
+	return should_quit;
+}
+
+/* returns false if a quit has been requested */
+static bool handle_events(struct game_state* state) {
+	bool should_quit = false;
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event))
+		switch (event.type) {
+			case SDL_KEYDOWN:
+				if (handle_key_down(&event.key.keysym)) {
+					should_quit = true;
+				}
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					state->is_dragging = true;
+				}
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					state->is_dragging = false;
+				}
+				break;
+			case SDL_MOUSEMOTION:
+				if (state->is_dragging) {
+					state->camera[0] += (float) event.motion.xrel / 800.0f * 2.0f;
+					state->camera[1] -= (float) event.motion.yrel / 600.0f * 2.0f;
+				}
+				break;
+			case SDL_MOUSEWHEEL:
+				state->camera[2] += (float) event.wheel.y * 0.1f;
+				break;
+			case SDL_QUIT:
+				should_quit = true;
+				break;
+		}
+
+	return should_quit;
+}
+
+static void render(struct game_state const* state) {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+/*	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(45.0, (double) (800) / (double) (600), 0.001, 100.0);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(
+		0.0, 0.0, 1.0,
+		0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0
+	);*/
+
+	/* region draw world map */
+	glPushMatrix();
+	glTranslatef(state->camera[0], state->camera[1], 0.0f);
+	glScalef(state->camera[2], state->camera[2], 1.0f);
+
+	glBindTexture(GL_TEXTURE_2D, state->provinces_texture);
+	glEnable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(-1.0f, -1.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(1.0f, -1.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(-1.0f, 1.0f);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+
+	glPopMatrix();
+	/* endregion */
+
+	/* region draw ui */
+	glBindTexture(GL_TEXTURE_2D, state->terrain_texture);
+	glEnable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(-0.1f, -0.1f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(0.1f, -0.1f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(0.1f, 0.1f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(-0.1f, 0.1f);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	/* endregion */
+}
+
+static GLenum init_opengl(void) {
+	GLenum error = GL_NO_ERROR;
+
+	/* Initialize Projection Matrix */
+	glMatrixMode(GL_PROJECTION);
+	if ((error = glGetError()) != GL_NO_ERROR) return error;
+	glLoadIdentity();
+	if ((error = glGetError()) != GL_NO_ERROR) return error;
+
+	/* Initialize Modelview Matrix */
+	glMatrixMode(GL_MODELVIEW);
+	if ((error = glGetError()) != GL_NO_ERROR) return error;
+	glLoadIdentity();
+	if ((error = glGetError()) != GL_NO_ERROR) return error;
+
+	/* Initialize clear color */
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	if ((error = glGetError()) != GL_NO_ERROR) return error;
+
+	return error;
+}
+
+static struct game_state* init_game_state() {
+	struct game_state* state = malloc(sizeof(struct game_state));
+	if (state == NULL) {
+		fprintf(stderr, "Failed to allocate memory for game state\n");
+	} else {
+		state->camera[0] = 0.0f;
+		state->camera[1] = 0.0f;
+		state->camera[2] = 1.0f;
+		state->is_dragging = false;
+
+		load_province_definitions(
+			&state->province_definitions,
+			&state->province_definitions_count
+		);
+
+		if (
+			(state->terrain_texture = SOIL_load_OGL_texture(
+				"map/terrain.bmp",
+				SOIL_LOAD_AUTO,
+				SOIL_CREATE_NEW_ID,
+				SOIL_FLAG_MIPMAPS
+			)) == 0
+			|| (state->provinces_texture = SOIL_load_OGL_texture(
+				"map/provinces.bmp",
+				SOIL_LOAD_AUTO,
+				SOIL_CREATE_NEW_ID,
+				SOIL_FLAG_MIPMAPS
+			)) == 0
+			) {
+			fprintf(stderr, "SOIL loading error: '%s'\n", SOIL_last_result());
+			if (state->province_definitions != NULL) free(state->province_definitions);
+			if (state->terrain_texture != 0) glDeleteTextures(1, &state->terrain_texture);
+			if (state->provinces_texture != 0) glDeleteTextures(1, &state->provinces_texture);
+			free(state);
+			state = NULL;
+		}
+	}
+
+	return state;
+}
+
+static void free_game_state(struct game_state* game_state) {
+	glDeleteTextures(1, &game_state->terrain_texture);
+	glDeleteTextures(1, &game_state->provinces_texture);
+	free(game_state);
+}
+
+int main(int argc, char** argv) {
+	int exit_code = EXIT_SUCCESS;
+	SDL_Window* window = NULL;
+	SDL_GLContext context = NULL;
+	static const int window_width = 800;
+	static const int window_height = 600;
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
+		exit_code = EXIT_FAILURE;
+	}
+	if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+		fprintf(stderr, "Failed to set MAJOR_VERSION: %s\n", SDL_GetError());
+		exit_code = EXIT_FAILURE;
+	} else if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
+		fprintf(stderr, "Failed to set MINOR_VERSION: %s\n", SDL_GetError());
+		exit_code = EXIT_FAILURE;
+	} else if ((window = SDL_CreateWindow(
+		"ov2",
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		window_width,
+		window_height,
+		SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+	)) == NULL) {
+		fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
+		exit_code = EXIT_FAILURE;
+	} else if ((context = SDL_GL_CreateContext(window)) == NULL) {
+		fprintf(stderr, "Failed to create OpenGL context: %s\n", SDL_GetError());
+		exit_code = EXIT_FAILURE;
+	} else {
+		GLenum error = GL_NO_ERROR;
+		struct game_state* game_state;
+		if (SDL_GL_SetSwapInterval(1) != 0) {
+			fprintf(stderr, "Warning: Failed to set vsync: %s\n", SDL_GetError());
+		}
+		if ((error = init_opengl()) != GL_NO_ERROR) {
+			fprintf(stderr, "Failed to initialize OpenGL: %s\n", gluErrorString(error));
+			exit_code = EXIT_FAILURE;
+		} else if ((game_state = init_game_state()) == NULL) {
+			fprintf(stderr, "Failed to initialize game state\n");
+			exit_code = EXIT_FAILURE;
+		} else {
+			bool should_quit = false;
+			while (!should_quit) {
+				should_quit = handle_events(game_state);
+				render(game_state);
+				SDL_GL_SwapWindow(window);
+			}
+		}
+		if (game_state != NULL) free_game_state(game_state);
+	}
+
+	if (context != NULL) SDL_GL_DeleteContext(context);
+	if (window != NULL) SDL_DestroyWindow(window);
+	SDL_Quit();
+	return exit_code;
+}
