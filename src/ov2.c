@@ -8,6 +8,7 @@
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_ttf.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
@@ -199,8 +200,10 @@ int main(int argc, char** argv) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
 		exit_code = EXIT_FAILURE;
-	}
-	if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+	} if (TTF_Init() != 0) {
+		fprintf(stderr, "TTF initialization failed: %s\n", TTF_GetError());
+		exit_code = EXIT_FAILURE;
+	} else if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
 		fprintf(stderr, "Failed to set MAJOR_VERSION: %s\n", SDL_GetError());
 		exit_code = EXIT_FAILURE;
 	} else if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
@@ -245,6 +248,7 @@ int main(int argc, char** argv) {
 
 	if (context != NULL) SDL_GL_DeleteContext(context);
 	if (window != NULL) SDL_DestroyWindow(window);
+	TTF_Quit();
 	SDL_Quit();
 	return exit_code;
 }

@@ -217,8 +217,8 @@ struct ui_instant_text_box {
 	int64_t max_height;
 	enum ui_format format;
 	bool fixed_size;
-	enum ui_orientation orientation;
 	char* texture_file;
+	enum ui_orientation orientation;
 	bool always_transparent;
 };
 

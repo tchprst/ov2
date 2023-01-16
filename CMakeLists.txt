@@ -10,4 +10,4 @@ add_executable(ov2
         src/fs.c src/fs.h
         src/ui.c src/ui.h)
 set_property(TARGET ov2 PROPERTY C_STANDARD 90)
-target_link_libraries(ov2 SDL2 GL GLU SOIL)
+target_link_libraries(ov2 SDL2 SDL2_ttf GL GLU SOIL)

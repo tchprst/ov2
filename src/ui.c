@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <SOIL/SOIL.h>
 #include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_ttf.h>
 #include "ui.h"
 
 struct frect {
@@ -184,17 +185,16 @@ static void render_simple_sprite(struct game_state const* state, struct sprite* 
 	}
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
+
 /* endregion */
 
 /* region ui */
 
 static void render_widget(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
-
 static void render_window(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
-
 static void render_icon(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
-
 static void render_button(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
+static void render_text_box(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
 void find_and_render_widget(struct game_state const* state, char const* name) {
 	struct ui_widget* widget = find_widget(state->widgets, name);
@@ -216,13 +216,13 @@ static void render_widget(struct game_state const* state, struct ui_widget* widg
 	case TYPE_BUTTON:
 		render_button(state, widget, parent);
 		break;
-	/*case TYPE_TEXT_BOX:
-		fprintf(stderr, "TODO: render text box\n");
+	case TYPE_TEXT_BOX:
+		render_text_box(state, widget, parent);
 		break;
 	case TYPE_INSTANT_TEXT_BOX:
-		fprintf(stderr, "TODO: render instant text box\n");
+		render_text_box(state, widget, parent);
 		break;
-	case TYPE_OVERLAPPING_ELEMENTS_BOX:
+	/*case TYPE_OVERLAPPING_ELEMENTS_BOX:
 		fprintf(stderr, "TODO: render overlapping elements box\n");
 		break;
 	case TYPE_SCROLLBAR:
@@ -386,6 +386,74 @@ static void render_button(struct game_state const* state, struct ui_widget* widg
 		}
 		/* endregion */
 	}
+}
+
+static void render_text_box(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent) {
+	if (widget->text_box.text == NULL) return;
+	struct frect dstrect = {
+		.x = (float) widget->position.x,
+		.y = (float) widget->position.y,
+		.w = (float) widget->size.x,
+		.h = (float) widget->size.y,
+	};
+
+	/* TODO: Fix this font rendering thing */
+
+	TTF_Font* font;
+	if (strncmp(widget->text_box.font, "vic_18", 6) == 0) {
+		font = TTF_OpenFont("/usr/share/fonts/TTF/FiraMono-Regular.ttf", 16);
+	} else if (strncmp(widget->text_box.font, "Arial12", 7) == 0) {
+		font = TTF_OpenFont("/usr/share/fonts/TTF/FiraMono-Regular.ttf", 12);
+	}  else {
+		fprintf(stderr, "Unknown font: %s\n", widget->text_box.font);
+	}
+	if (font == NULL) {
+		fprintf(stderr, "Could not open font: %s\n", TTF_GetError());
+		return;
+	}
+	SDL_Color color = { 255, 255, 255, 255 };
+	SDL_Surface* surface = TTF_RenderUTF8_Blended(font, widget->text_box.text, color);
+	if (surface == NULL) {
+		fprintf(stderr, "Could not render text: %s\n", TTF_GetError());
+	} else {
+		GLuint texture = 0;
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, surface->pixels);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		SDL_FreeSurface(surface);
+		struct frect src = {
+			.x = 0.0f,
+			.y = 0.0f,
+			.w = 1.0f,
+			.h = 1.0f,
+		};
+		if (dstrect.w == 0.0f) dstrect.w = (float) surface->w;
+		if (dstrect.h == 0.0f) dstrect.h = (float) surface->h;
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glBegin(GL_QUADS);
+		glTexCoord2f(src.x, src.y);
+		glVertex2f(dstrect.x, dstrect.y);
+		glTexCoord2f(src.x + src.w, src.y);
+		glVertex2f(dstrect.x + dstrect.w, dstrect.y);
+		glTexCoord2f(src.x + src.w, src.y + src.h);
+		glVertex2f(dstrect.x + dstrect.w, dstrect.y + dstrect.h);
+		glTexCoord2f(src.x, src.y + src.h);
+		glVertex2f(dstrect.x, dstrect.y + dstrect.h);
+		glEnd();
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_BLEND);
+		glDisable(GL_TEXTURE_2D);
+		glDeleteTextures(1, &texture);
+	}
+	TTF_CloseFont(font);
 }
 
 /* endregion */
