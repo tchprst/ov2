@@ -44,6 +44,8 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		state->should_quit = false;
 		state->widgets = NULL;
 		state->sprites = NULL;
+		state->bitmap_fonts = NULL;
+		state->fonts = NULL;
 		state->last_game_tick_time = 0;
 
 		{
@@ -64,7 +66,7 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 						strcpy(path, "interface/");
 						strcat(path, entry->d_name);
 						if (has_ext(path, ".gfx") || has_ext(path, ".gui")) {
-							parse(path, &state->sprites, &state->widgets);
+							parse(path, &state->sprites, &state->widgets, &state->bitmap_fonts, &state->fonts);
 						}
 						free(path);
 					}
@@ -89,6 +91,8 @@ void free_game_state(struct game_state* game_state) {
 	);
 	free_sprites(game_state->sprites);
 	free_widgets(game_state->widgets);
+	free_bitmap_fonts(game_state->bitmap_fonts);
+	free_fonts(game_state->fonts);
 	glDeleteTextures(1, &game_state->provinces_texture);
 
 	free(game_state);

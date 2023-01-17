@@ -10,6 +10,13 @@ struct rgb {
 	double b;
 };
 
+struct rgba {
+	double r;
+	double g;
+	double b;
+	double a;
+};
+
 struct vec2i {
 	int64_t x;
 	int64_t y;
@@ -336,10 +343,52 @@ struct ui_widget {
 
 /* endregion */
 
-void parse(char const* path, struct sprite** sprites, struct ui_widget** widgets);
+/* region bitmap fonts */
 
-void free_sprites(struct sprite* sprites);
+struct color_codes {
+	char* name;
+	struct rgb rgb;
+	struct color_codes* next;
+};
 
-void free_widgets(struct ui_widget* widgets);
+struct bitmap_font {
+	char* name;
+	char* font_name;
+	struct rgba color;
+	bool effect;
+	struct color_codes* color_codes;
+	struct bitmap_font* next;
+};
+
+/* endregion */
+
+/* region fonts */
+
+struct font {
+	char* name;
+	char* font_name;
+	int64_t height;
+	char* charset;
+	struct rgba color;
+	struct font* next;
+};
+
+/* endregion */
+
+void parse(
+	char const* path,
+	struct sprite** sprites,
+	struct ui_widget** widgets,
+	struct bitmap_font** bitmap_fonts,
+	struct font** fonts
+);
+
+void free_sprites(struct sprite*);
+
+void free_widgets(struct ui_widget*);
+
+void free_bitmap_fonts(struct bitmap_font*);
+
+void free_fonts(struct font*);
 
 #endif /*OV2_PARSE_H*/

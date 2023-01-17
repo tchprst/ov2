@@ -38,6 +38,9 @@ struct game_state {
 
 	struct sprite* sprites;
 	struct ui_widget* widgets;
+	struct bitmap_font* bitmap_fonts;
+	struct font* fonts;
+
 	GLuint provinces_texture;
 };
 

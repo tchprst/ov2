@@ -12,6 +12,7 @@
 #include <limits.h>
 
 /* region generic parsing */
+
 struct loc {
 	uint64_t lineno;
 	uint64_t colno;
@@ -71,7 +72,6 @@ static bool read_char(struct source* src, char* c) {
 	}
 	return true;
 }
-
 
 static bool peek_char(struct source* src, char* c, bool ignore_whitespace);
 static bool consume_char(struct source* src, char* c, bool ignore_whitespace);
@@ -252,7 +252,6 @@ static void parse_int_literal(struct source* src, int64_t* i) {
 	free(buf);
 }
 
-
 static void parse_float_literal(struct source* src, double* f) {
 	char c;
 	char* buf;
@@ -329,12 +328,69 @@ static void parse_vec2i(struct source* src, struct vec2i* vec2) {
 	parse_str(src, "}");
 }
 
-static void parse_rgb(struct source* src, struct rgb* rgb) {
+static void parse_rgb_float(struct source* src, struct rgb* rgb) {
 	parse_str(src, "{");
 	parse_float_literal(src, &rgb->r);
 	parse_float_literal(src, &rgb->g);
 	parse_float_literal(src, &rgb->b);
 	parse_str(src, "}");
+}
+
+static void parse_rgba_hex(struct source* src, struct rgba* rgba) {
+	char buf[3];
+	char* endptr;
+	long value;
+
+	consume_whitespace_and_comments(src);
+	parse_str(src, "0x");
+
+	consume_char(src, &buf[0], false);
+	consume_char(src, &buf[1], false);
+	buf[2] = '\0';
+	value = strtol(buf, &endptr, 16);
+	if (value == LONG_MIN || value == LONG_MAX) {
+		error(src, "Integer literal '%s' is out of range.", buf);
+	}
+	if (*endptr != '\0') {
+		error(src, "Invalid integer literal '%s'.", buf);
+	}
+	rgba->a = (float) value / 255.0f;
+
+	consume_char(src, &buf[0], false);
+	consume_char(src, &buf[1], false);
+	buf[2] = '\0';
+	value = strtol(buf, &endptr, 16);
+	if (value == LONG_MIN || value == LONG_MAX) {
+		error(src, "Integer literal '%s' is out of range.", buf);
+	}
+	if (*endptr != '\0') {
+		error(src, "Invalid integer literal '%s'.", buf);
+	}
+	rgba->r = (float) value / 255.0f;
+
+	consume_char(src, &buf[0], false);
+	consume_char(src, &buf[1], false);
+	buf[2] = '\0';
+	value = strtol(buf, &endptr, 16);
+	if (value == LONG_MIN || value == LONG_MAX) {
+		error(src, "Integer literal '%s' is out of range.", buf);
+	}
+	if (*endptr != '\0') {
+		error(src, "Invalid integer literal '%s'.", buf);
+	}
+	rgba->g = (float) value / 255.0f;
+
+	consume_char(src, &buf[0], false);
+	consume_char(src, &buf[1], false);
+	buf[2] = '\0';
+	value = strtol(buf, &endptr, 16);
+	if (value == LONG_MIN || value == LONG_MAX) {
+		error(src, "Integer literal '%s' is out of range.", buf);
+	}
+	if (*endptr != '\0') {
+		error(src, "Invalid integer literal '%s'.", buf);
+	}
+	rgba->b = (float) value / 255.0f;
 }
 
 static void parse_click_sound(struct source* src, enum click_sound* click_sound) {
@@ -369,6 +425,7 @@ static void parse_load_type(struct source* src, enum sprite_load_type* load_type
 /* endregion */
 
 /* region parse_sprites */
+
 static void parse_line_chart(struct source* src, struct sprite* sprite) {
 	char c = '\0';
 	sprite->type = TYPE_LINE_CHART;
@@ -510,9 +567,9 @@ static void parse_progress_bar(struct source* src, struct sprite* sprite) {
 		if (strcasecmp(property, "name") == 0) {
 			parse_string_literal(src, &sprite->name);
 		} else if (strcasecmp(property, "color") == 0) {
-			parse_rgb(src, &sprite->progress_bar.color1);
+			parse_rgb_float(src, &sprite->progress_bar.color1);
 		} else if (strcasecmp(property, "colortwo") == 0) {
-			parse_rgb(src, &sprite->progress_bar.color2);
+			parse_rgb_float(src, &sprite->progress_bar.color2);
 		} else if (strcasecmp(property, "texturefile1") == 0) {
 			parse_string_literal(src, &sprite->progress_bar.texture_file_1);
 		} else if (strcasecmp(property, "texturefile2") == 0) {
@@ -792,7 +849,7 @@ static void parse_sprites(struct source* src, struct sprite** sprites) {
 }
 /* endregion */
 
-/* region parse_gui */
+/* region parse_widgets */
 
 static void parse_widget(struct source* src, char const* name, struct ui_widget** widgets);
 
@@ -1575,10 +1632,214 @@ static void parse_widgets(struct source* src, struct ui_widget** widgets) {
 }
 /* endregion */
 
+/* region parse_bitmap_fonts */
+
+static void parse_color_codes(struct source* src, struct color_codes** colors) {
+	char c = '\0';
+	parse_str(src, "{");
+
+	for (peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
+		struct color_codes* color =
+			calloc_or_die(1, sizeof(struct color_codes));
+		color->name = NULL;
+		color->rgb = (struct rgb){0, 0, 0};
+		color->next = NULL;
+		parse_identifier(src, &color->name);
+		parse_str(src, "=");
+		parse_rgb_float(src, &color->rgb);
+
+		/* Add to the end of the list */
+		color->next = NULL;
+		if (*colors == NULL) {
+			*colors = color;
+		} else {
+			struct color_codes* last = *colors;
+			while (last->next != NULL) {
+				last = last->next;
+			}
+			last->next = color;
+		}
+	}
+
+	parse_str(src, "}");
+}
+
+static void parse_bitmap_font(struct source* src, struct bitmap_font** fonts) {
+	struct bitmap_font* font = calloc_or_die(1, sizeof(struct bitmap_font));
+	char c = '\0';
+	font->name = NULL;
+	font->font_name = NULL;
+	font->color = (struct rgba){0, 0, 0, 0};
+	font->effect = false;
+	font->color_codes = NULL;
+	font->next = NULL;
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcasecmp(property, "name") == 0) {
+			parse_string_literal(src, &font->name);
+		} else if (strcasecmp(property, "fontname") == 0) {
+			parse_string_literal(src, &font->font_name);
+		} else if (strcasecmp(property, "color") == 0) {
+			parse_rgba_hex(src, &font->color);
+		} else if (strcasecmp(property, "effect") == 0) {
+			parse_bool_literal(src, &font->effect);
+		} else if (strcasecmp(property, "colorcodes") == 0) {
+			parse_color_codes(src, &font->color_codes);
+		} else {
+			error(src, "Unknown property '%s' for bitmap font.", property);
+		}
+		free(property);
+		peek_char(src, &c, true);
+	}
+
+	parse_str(src, "}");
+
+	/* Add to the end of the list */
+	font->next = NULL;
+	if (*fonts == NULL) {
+		*fonts = font;
+	} else {
+		struct bitmap_font* last = *fonts;
+		while (last->next != NULL) {
+			last = last->next;
+		}
+		last->next = font;
+	}
+}
+
+static void parse_bitmap_fonts(struct source* src, struct bitmap_font** fonts) {
+	char c = '\0';
+	parse_str(src, "{");
+
+	for (peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
+		char* property = NULL;
+		parse_str(src, "bitmapfont");
+		parse_str(src, "=");
+		parse_bitmap_font(src, fonts);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+/* endregion */
+
+/* region parse_fonts */
+
+static void parse_font(struct source* src, struct font** fonts) {
+	struct font* font = calloc_or_die(1, sizeof(struct font));
+	char c = '\0';
+	font->name = NULL;
+	font->font_name = NULL;
+	font->height = 0;
+	font->charset = NULL;
+	font->color = (struct rgba){0, 0, 0, 0};
+	font->next = NULL;
+
+	parse_str(src, "{");
+
+	peek_char(src, &c, true);
+	while (c != '}') {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		if (strcasecmp(property, "name") == 0) {
+			parse_string_literal(src, &font->name);
+		} else if (strcasecmp(property, "fontname") == 0) {
+			parse_string_literal(src, &font->font_name);
+		} else if (strcasecmp(property, "height") == 0) {
+			parse_int_literal(src, &font->height);
+		} else if (strcasecmp(property, "charset") == 0) {
+			parse_string_literal(src, &font->charset);
+		} else if (strcasecmp(property, "color") == 0) {
+			parse_rgba_hex(src, &font->color);
+		} else {
+			error(src, "Unknown property '%s' for font.", property);
+		}
+		free(property);
+		peek_char(src, &c, true);
+	}
+
+	parse_str(src, "}");
+
+	/* Add to the end of the list */
+	font->next = NULL;
+	if (*fonts == NULL) {
+		*fonts = font;
+	} else {
+		struct font* last = *fonts;
+		while (last->next != NULL) {
+			last = last->next;
+		}
+		last->next = font;
+	}
+}
+
+static void parse_fonts(struct source* src, struct font** fonts) {
+	char c = '\0';
+	parse_str(src, "{");
+
+	for (peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
+		char* property = NULL;
+		parse_str(src, "font");
+		parse_str(src, "=");
+		parse_font(src, fonts);
+		free(property);
+	}
+
+	parse_str(src, "}");
+}
+
+/* endregion */
+
+static void ignore(struct source* src) {
+	/* TODO: Nothing should be ignored, remove this function when applicable. */
+	char c = '\0';
+	parse_str(src, "{");
+	for (c = peek_char(src, &c, true); c != '}'; peek_char(src, &c, true)) {
+		char* property = NULL;
+		parse_identifier(src, &property);
+		parse_str(src, "=");
+		peek_char(src, &c, true);
+		if (c == '{') {
+			if (strcasecmp(property, "color")  == 0
+			    || strcasecmp(property, "colortwo") == 0
+			    || strcasecmp(property, "offset2") == 0
+			    || strcasecmp(property, "diffuse") == 0
+			    || strcasecmp(property, "specular") == 0
+			    || strcasecmp(property, "ambient") == 0
+			    || strcasecmp(property, "direction") == 0
+			    || strcasecmp(property, "attenuation") == 0
+			    || strcasecmp(property, "position") == 0) {
+				while (c != '}') {
+					consume_char(src, &c, true);
+				}
+			} else {
+				ignore(src);
+			}
+		} else {
+			while (!is_whitespace(c)) {
+				consume_char(src, &c, false);
+				peek_char(src, &c, false);
+			}
+		}
+		free(property);
+		peek_char(src, &c, true);
+	}
+	parse_str(src, "}");
+}
+
 void parse(
 	char const* path,
 	struct sprite** sprites,
-	struct ui_widget** widgets
+	struct ui_widget** widgets,
+	struct bitmap_font** bitmap_fonts,
+	struct font** fonts
 ) {
 	struct source src;
 	char c = '\0';
@@ -1595,19 +1856,22 @@ void parse(
 		        strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	if (peek_char(&src, &c , true)) {
+	while (peek_char(&src, &c , true)) {
 		parse_identifier(&src, &identifier);
 		parse_str(&src, "=");
 		if (strcasecmp(identifier, "spritetypes") == 0) {
 			parse_sprites(&src, sprites);
 		} else if (strcasecmp(identifier, "guitypes") == 0) {
 			parse_widgets(&src, widgets);
+		} else if (strcasecmp(identifier, "bitmapfonts") == 0) {
+			parse_bitmap_fonts(&src, bitmap_fonts);
+		} else if (strcasecmp(identifier, "fonts") == 0) {
+			parse_fonts(&src, fonts);
 		} else {
-			warning(&src, "Ignoring unknown file type "
+			warning(&src, "Ignoring unknown type "
 			        "'%s'.", identifier);
+			ignore(&src);
 		}
-	} else {
-		/* Ignoring empty files */
 	}
 	fclose(src.file);
 	free(src.buf);
@@ -1619,4 +1883,12 @@ void free_sprites(struct sprite* sprites) {
 
 void free_widgets(struct ui_widget* widgets) {
 	fprintf(stderr, "WARNING: free_widgets is not implemented.\n");
+}
+
+void free_bitmap_fonts(struct bitmap_font* bitmap_fonts) {
+	fprintf(stderr, "WARNING: free_bitmap_fonts is not implemented.\n");
+}
+
+void free_fonts(struct font* fonts) {
+	fprintf(stderr, "WARNING: free_fonts is not implemented.\n");
 }
