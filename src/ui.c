@@ -6,6 +6,21 @@
 #include <SDL2/SDL_ttf.h>
 #include "ui.h"
 
+static char const* const month_names[] = {
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+};
+
 struct frect {
 	float x, y, w, h;
 };
@@ -168,15 +183,15 @@ static void render_sprite(struct game_state const* state, struct sprite* sprite,
 
 static void render_simple_sprite(struct game_state const* state, struct sprite* sprite, uint64_t frame, struct frect* dstrect) {
 	GLint width, height;
-	GLuint texture = find_or_load_texture(sprite->sprite.texture_file);
+	GLuint texture = find_or_load_texture(sprite->simple_sprite.texture_file);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-	dstrect->w = (float) width / (sprite->sprite.no_of_frames > 1 ? (float) sprite->sprite.no_of_frames : 1.0f);
+	dstrect->w = (float) width / (sprite->simple_sprite.no_of_frames > 1 ? (float) sprite->simple_sprite.no_of_frames : 1.0f);
 	if (dstrect->h == 0) dstrect->h = (float) height;
-	if (sprite->sprite.no_of_frames > 1) {
-		float frame_width = 1.0f / (float)sprite->sprite.no_of_frames;
+	if (sprite->simple_sprite.no_of_frames > 1) {
+		float frame_width = 1.0f / (float)sprite->simple_sprite.no_of_frames;
 		float frame_x = frame_width * (float)frame;
 		struct frect srcrect = { frame_x, 0.0f, frame_width, 1.0f };
 		render_texture(texture, &srcrect, dstrect);
@@ -196,7 +211,7 @@ static void render_icon(struct game_state const* state, struct ui_widget* widget
 static void render_button(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 static void render_text_box(struct game_state const* state, struct ui_widget* widget, struct ui_widget* parent);
 
-void find_and_render_widget(struct game_state const* state, char const* name) {
+static void find_and_render_widget(struct game_state const* state, char const* name) {
 	struct ui_widget* widget = find_widget(state->widgets, name);
 	if (widget == NULL) {
 		fprintf(stderr, "Could not find widget '%s'.\n", name);
@@ -310,18 +325,18 @@ static void render_button(struct game_state const* state, struct ui_widget* widg
 		fprintf(stderr, "Could not find sprite %s.\n", widget->button.quad_texture_sprite);
 	} else {
 		/* region TODO: Figure out a proper way of handling no_of_frames/sprite texture size. */
-		if((widget->size.x == 0 || widget->size.y == 0) && sprite->type == TYPE_SIMPLE_SPRITE && sprite->sprite.texture_file != NULL && *sprite->sprite.texture_file != '\0') {
+		if((widget->size.x == 0 || widget->size.y == 0) && sprite->type == TYPE_SIMPLE_SPRITE && sprite->simple_sprite.texture_file != NULL && *sprite->simple_sprite.texture_file != '\0') {
 			GLint width, height;
-			GLuint t = find_or_load_texture(sprite->sprite.texture_file);
+			GLuint t = find_or_load_texture(sprite->simple_sprite.texture_file);
 			glBindTexture(GL_TEXTURE_2D, t);
 			glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 			glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
 			glBindTexture(GL_TEXTURE_2D, 0);
-			if (sprite->sprite.no_of_frames > 1) {
-				width /= (float) sprite->sprite.no_of_frames;
-			}
 			widget->size.x = width;
 			widget->size.y = height;
+			if (sprite->simple_sprite.no_of_frames > 1) {
+				widget->size.x /= (float) sprite->simple_sprite.no_of_frames;
+			}
 		}
 		/* endregion */
 
@@ -359,7 +374,7 @@ static void render_button(struct game_state const* state, struct ui_widget* widg
 			dstrect.x += (float)parent->position.x;
 			dstrect.y += (float)parent->position.y;
 		}*/
-		render_sprite(state, sprite, 0, &dstrect);
+		render_sprite(state, sprite, widget->button.frame, &dstrect);
 		/* region TODO: Handle button hover/press properly. */
 		int mouse_x, mouse_y;
 		uint32_t mouseButtons = SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -400,18 +415,21 @@ static void render_text_box(struct game_state const* state, struct ui_widget* wi
 	/* TODO: Fix this font rendering thing */
 
 	TTF_Font* font;
+	SDL_Color color = { 255, 255, 255, 255 };
 	if (strncmp(widget->text_box.font, "vic_18", 6) == 0) {
 		font = TTF_OpenFont("/usr/share/fonts/TTF/FiraMono-Regular.ttf", 16);
 	} else if (strncmp(widget->text_box.font, "Arial12", 7) == 0) {
 		font = TTF_OpenFont("/usr/share/fonts/TTF/FiraMono-Regular.ttf", 12);
-	}  else {
+	} else if (strncmp(widget->text_box.font, "vic_22", 6) == 0) {
+		font = TTF_OpenFont("/usr/share/fonts/TTF/FiraMono-Regular.ttf", 19);
+		color.r = 0; color.g = 0; color.b = 0;
+	} else {
 		fprintf(stderr, "Unknown font: %s\n", widget->text_box.font);
 	}
 	if (font == NULL) {
 		fprintf(stderr, "Could not open font: %s\n", TTF_GetError());
 		return;
 	}
-	SDL_Color color = { 255, 255, 255, 255 };
 	SDL_Surface* surface = TTF_RenderUTF8_Blended(font, widget->text_box.text, color);
 	if (surface == NULL) {
 		fprintf(stderr, "Could not render text: %s\n", TTF_GetError());
@@ -457,3 +475,73 @@ static void render_text_box(struct game_state const* state, struct ui_widget* wi
 }
 
 /* endregion */
+
+static struct ui_widget* find_window_child(struct ui_widget* widgets, const char* name) {
+	/* TODO: We really need a good way of just iterating every single ui widget i think */
+	for (; widgets != NULL; widgets = widgets->next) {
+		if (strcmp(widgets->name, name) == 0) {
+			return widgets;
+		}
+		if (widgets->type == TYPE_WINDOW && widgets->window.children != NULL) {
+			struct ui_widget* child = find_widget(widgets->window.children, name);
+			if (child != NULL) {
+				return child;
+			}
+		}
+	}
+	return NULL;
+}
+
+static void update_ui(struct game_state const* state) {
+	/*update ui*/
+	if (state->is_paused) {
+		find_window_child(state->widgets, "speed_indicator")->button.frame = 0;
+	} else {
+		find_window_child(state->widgets, "speed_indicator")->button.frame = state->speed;
+	}
+	/*print the date as Junary 24, 1836*/
+	char* date = malloc(32);
+	int32_t year = state->year;
+	int32_t month = state->month;
+	int32_t day = state->day;
+	sprintf(date, "%s %d, %d", month_names[month], day + 1, year + 1);
+	if (find_window_child(state->widgets, "DateText")->instant_text_box.text != NULL) {
+		free(find_window_child(state->widgets, "DateText")->instant_text_box.text);
+	}
+	find_window_child(state->widgets, "DateText")->instant_text_box.text = date;
+}
+
+void render_ui(struct game_state const* state) {
+	update_ui(state);
+
+	/* Flat pixel-perfect rendering mode. */
+	glPushMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, state->window_width, state->window_height);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
+
+	{
+		/* TODO: DEBUG Hide part of the menubar widget*/
+		struct ui_widget* widget = state->widgets;
+		for (; widget != NULL; widget = widget->next) {
+			if (strcmp(widget->name, "menubar") == 0) {
+				widget = widget->window.children;
+				for (; widget != NULL; widget = widget->next) {
+					if (strcmp(widget->name, "chat_window") == 0) {
+						widget->window.dont_render = "true";
+					}
+				}
+				break;
+			}
+		}
+	}
+	find_and_render_widget(state, "topbar");
+	find_and_render_widget(state, "FPS_Counter");
+	find_and_render_widget(state, "menubar");
+	find_and_render_widget(state, "minimap_pic");
+	glPopMatrix();
+}

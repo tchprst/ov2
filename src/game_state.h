@@ -17,7 +17,7 @@ enum current_window {
 	WINDOW_MILITARY
 };
 
-/* TODO: Separate into actual game state and UI state*/
+/* TODO: Separate into actual game state and UI state. */
 struct game_state {
 	size_t province_definitions_count;
 	struct province_definition* province_definitions;
@@ -33,6 +33,8 @@ struct game_state {
 	float is_dragging;
 	int32_t window_width;
 	int32_t window_height;
+	bool should_quit;
+	uint32_t last_game_tick_time;
 
 	struct sprite* sprites;
 	struct ui_widget* widgets;

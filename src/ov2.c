@@ -5,7 +5,6 @@
 #include "fs.h"
 #include "ui.h"
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_ttf.h>
@@ -14,96 +13,8 @@
 #include <SOIL/SOIL.h> /* TODO: Replace SOIL with SDL_image */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-
-/* returns false if a quit has been requested */
-static bool handle_key_down(SDL_Keysym* keysym) {
-	bool should_quit = false;
-
-	switch (keysym->sym) {
-	case SDLK_ESCAPE:
-	case SDLK_q:
-		should_quit = true;
-		break;
-	default:
-		break;
-	}
-
-	return should_quit;
-}
-
-/* returns false if a quit has been requested */
-static bool handle_events(struct game_state* state) {
-	bool should_quit = false;
-	SDL_Event event;
-
-	while (SDL_PollEvent(&event))
-		switch (event.type) {
-			case SDL_KEYDOWN:
-				if (handle_key_down(&event.key.keysym)) {
-					should_quit = true;
-				}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (state->current_window == WINDOW_MAP && event.button.button == SDL_BUTTON_MIDDLE) {
-					state->is_dragging = true;
-				}
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if (state->current_window == WINDOW_MAP && event.button.button == SDL_BUTTON_MIDDLE) {
-					state->is_dragging = false;
-				}
-				break;
-			case SDL_MOUSEMOTION:
-				if (state->is_dragging) {
-					state->camera[0] += (float) event.motion.xrel / (float) state->window_width * 2.0f;
-					state->camera[1] -= (float) event.motion.yrel / (float) state->window_height * 2.0f;
-				}
-				break;
-			case SDL_MOUSEWHEEL: {
-				int32_t i;
-				float mouse_x, mouse_y, offset_x, offset_y;
-				float previous_scale = state->camera[2];
-				if (event.wheel.y > 0) {
-					for (i = 0; i < event.wheel.y; i++) {
-						state->camera[2] *= 1.1f;
-					}
-				} else if (event.wheel.y < 0) {
-					for (i = 0; i < -event.wheel.y; i++) {
-						state->camera[2] /= 1.1f;
-					}
-				}
-				if (state->camera[2] < 0.1f) {
-					state->camera[2] = 0.1f;
-				}
-				if (state->camera[2] > 20.0f) {
-					state->camera[2] = 20.0f;
-				}
-
-				/* Zoom relative to mouse cursor. */
-				mouse_x = (float) event.wheel.mouseX / (float) state->window_width * 2.0f - 1.0f;
-				mouse_y = (float) event.wheel.mouseY / (float) state->window_height * 2.0f - 1.0f;
-				mouse_y = -mouse_y;
-				offset_x = (mouse_x - state->camera[0]) * state->camera[2] / previous_scale;
-				offset_y = (mouse_y - state->camera[1]) * state->camera[2] / previous_scale;
-				state->camera[0] = mouse_x - offset_x;
-				state->camera[1] = mouse_y - offset_y;
-				break;
-			}
-			case SDL_WINDOWEVENT:
-				if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-					state->window_width = event.window.data1;
-					state->window_height = event.window.data2;
-					glViewport(0, 0, event.window.data1, event.window.data2);
-				}
-				break;
-			case SDL_QUIT:
-				should_quit = true;
-				break;
-		}
-
-	return should_quit;
-}
+#include "ui_event.h"
+#include "game_tick.h"
 
 static void render(struct game_state const* state) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -135,37 +46,7 @@ static void render(struct game_state const* state) {
 	}
 	/* endregion */
 
-	/* region draw ui */
-	/* Flat pixel-perfect rendering mode. */
-	glPushMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glViewport(0, 0, state->window_width, state->window_height);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glOrtho(0, state->window_width, state->window_height, 0, 1, -1);
-
-	{
-		/* TODO: DEBUG Hide part of the menubar widget*/
-		struct ui_widget* widget = state->widgets;
-		for (; widget != NULL; widget = widget->next) {
-			if (strcmp(widget->name, "menubar") == 0) {
-				widget = widget->window.children;
-				for (; widget != NULL; widget = widget->next) {
-					if (strcmp(widget->name, "chat_window") == 0) {
-						widget->window.dont_render = "true";
-					}
-				}
-				break;
-			}
-		}
-	}
-	find_and_render_widget(state, "topbar");
-	find_and_render_widget(state, "FPS_Counter");
-	find_and_render_widget(state, "menubar");
-	find_and_render_widget(state, "minimap_pic");
-	glPopMatrix();
+	render_ui(state);
 }
 
 static GLenum init_opengl(void) {
@@ -236,9 +117,9 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "Failed to initialize game state\n");
 			exit_code = EXIT_FAILURE;
 		} else {
-			bool should_quit = false;
-			while (!should_quit) {
-				should_quit = handle_events(game_state);
+			while (!game_state->should_quit) {
+				handle_events(game_state);
+				game_tick(game_state);
 				render(game_state);
 				SDL_GL_SwapWindow(window);
 			}

@@ -122,7 +122,7 @@ struct sprite {
 		TYPE_SCROLLING_SPRITE
 	} type;
 	union {
-		struct simple_sprite sprite;
+		struct simple_sprite simple_sprite;
 		struct line_chart line_chart;
 		struct masked_shield masked_shield;
 		struct progress_bar progress_bar;
@@ -195,6 +195,7 @@ struct ui_button {
 	char* parent;
 	double rotation;
 	enum ui_format format;
+	int64_t frame;
 };
 
 struct ui_text_box {

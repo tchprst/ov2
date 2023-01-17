@@ -405,14 +405,14 @@ static void parse_sprite(struct source* src, struct sprite* sprite) {
 	char c = '\0';
 	sprite->type = TYPE_SIMPLE_SPRITE;
 	sprite->name = NULL;
-	sprite->sprite.texture_file = NULL;
-	sprite->sprite.effect_file = NULL;
-	sprite->sprite.no_of_frames = 1;
-	sprite->sprite.always_transparent = false;
-	sprite->sprite.transparency_check = false;
-	sprite->sprite.no_refcount = false;
-	sprite->sprite.click_sound = CLICK_SOUND_CLICK;
-	sprite->sprite.load_type = SPRITE_LOAD_TYPE_INGAME;
+	sprite->simple_sprite.texture_file = NULL;
+	sprite->simple_sprite.effect_file = NULL;
+	sprite->simple_sprite.no_of_frames = 1;
+	sprite->simple_sprite.always_transparent = false;
+	sprite->simple_sprite.transparency_check = false;
+	sprite->simple_sprite.no_refcount = false;
+	sprite->simple_sprite.click_sound = CLICK_SOUND_CLICK;
+	sprite->simple_sprite.load_type = SPRITE_LOAD_TYPE_INGAME;
 	parse_str(src, "=");
 	parse_str(src, "{");
 
@@ -424,21 +424,21 @@ static void parse_sprite(struct source* src, struct sprite* sprite) {
 		if (strcasecmp(property, "name") == 0) {
 			parse_string_literal(src, &sprite->name);
 		} else if (strcasecmp(property, "texturefile") == 0) {
-			parse_string_literal(src, &sprite->sprite.texture_file);
+			parse_string_literal(src, &sprite->simple_sprite.texture_file);
 		} else if (strcasecmp(property, "noofframes") == 0) {
-			parse_int_literal(src, &sprite->sprite.no_of_frames);
+			parse_int_literal(src, &sprite->simple_sprite.no_of_frames);
 		} else if (strcasecmp(property, "allwaystransparent") == 0) {
-			parse_bool_literal(src, &sprite->sprite.always_transparent);
+			parse_bool_literal(src, &sprite->simple_sprite.always_transparent);
 		} else if (strcasecmp(property, "transparencecheck") == 0) {
-			parse_bool_literal(src, &sprite->sprite.transparency_check);
+			parse_bool_literal(src, &sprite->simple_sprite.transparency_check);
 		} else if (strcasecmp(property, "norefcount") == 0) {
-			parse_bool_literal(src, &sprite->sprite.no_refcount);
+			parse_bool_literal(src, &sprite->simple_sprite.no_refcount);
 		} else if (strcasecmp(property, "effectfile") == 0) {
-			parse_string_literal(src, &sprite->sprite.effect_file);
+			parse_string_literal(src, &sprite->simple_sprite.effect_file);
 		} else if (strcasecmp(property, "clicksound") == 0) {
-			parse_click_sound(src, &sprite->sprite.click_sound);
+			parse_click_sound(src, &sprite->simple_sprite.click_sound);
 		} else if (strcasecmp(property, "loadtype") == 0) {
-			parse_load_type(src, &sprite->sprite.load_type);
+			parse_load_type(src, &sprite->simple_sprite.load_type);
 		} else {
 			error(src, "Unknown property '%s' for simple_sprite.", property);
 		}
@@ -961,6 +961,7 @@ static void parse_button(struct source* src, struct ui_widget* widget) {
 	widget->button.parent = NULL;
 	widget->button.rotation = 0.0;
 	widget->button.format = UI_FORMAT_LEFT;
+	widget->button.frame = 0;
 	parse_str(src, "{");
 
 	peek_char(src, &c, true);

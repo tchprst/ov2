@@ -41,8 +41,10 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		state->is_dragging = false;
 		state->window_width = window_width;
 		state->window_height = window_height;
+		state->should_quit = false;
 		state->widgets = NULL;
 		state->sprites = NULL;
+		state->last_game_tick_time = 0;
 
 		{
 			DIR* dir;

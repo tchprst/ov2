@@ -2,7 +2,7 @@
 #define OV2_FS_H
 
 #ifdef _WIN32
-#include "win32/dirent.h.h"
+#include "win32/dirent.h"
 #else
 #include <dirent.h>
 #endif

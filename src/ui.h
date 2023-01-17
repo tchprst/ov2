@@ -3,6 +3,6 @@
 
 #include "game_state.h"
 
-void find_and_render_widget(struct game_state const* state, char const* name);
+void render_ui(struct game_state const* state);
 
 #endif /*OV2_UI_H*/
