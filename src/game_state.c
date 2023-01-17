@@ -30,6 +30,11 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		success = false;
 	} else {
 		state->current_window = WINDOW_MAP;
+		state->is_paused = true;
+		state->speed = 1;
+		state->year = 1835;
+		state->month = 0;
+		state->day = 0;
 		state->camera[0] = 0.0f;
 		state->camera[1] = 0.0f;
 		state->camera[2] = 1.0f;
