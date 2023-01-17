@@ -1892,3 +1892,138 @@ void free_bitmap_fonts(struct bitmap_font* bitmap_fonts) {
 void free_fonts(struct font* fonts) {
 	fprintf(stderr, "WARNING: free_fonts is not implemented.\n");
 }
+
+/* region parse_font_desc */
+
+void parse_font_desc(char const* path, struct font_desc* desc) {
+	struct source src;
+	char c = '\0';
+	char* identifier = NULL;
+	size_t i = 0;
+	src.loc.lineno = 1;
+	src.loc.colno = 1;
+	src.bufcap = 1;
+	src.buf = calloc_or_die(1, 1);
+	src.buflen = 0;
+	src.file = fopen(path, "r");
+	src.name = path;
+	if (src.file == NULL) {
+		fprintf(stderr, "Failed to open file '%s': %s\n", path,
+		        strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	parse_str(&src, "info");
+
+	parse_str(&src, "face=");
+	parse_string_literal(&src, &desc->face);
+
+	parse_str(&src, "size=");
+	parse_int_literal(&src, &desc->size);
+
+	parse_str(&src, "bold=");
+	parse_int_literal(&src, &desc->bold);
+
+	parse_str(&src, "italic=");
+	parse_int_literal(&src, &desc->italic);
+
+	parse_str(&src, "charset=");
+	parse_string_literal(&src, &desc->charset);
+
+	parse_str(&src, "stretchH=");
+	parse_int_literal(&src, &desc->stretch_h);
+
+	parse_str(&src, "smooth=");
+	parse_int_literal(&src, &desc->smooth);
+
+	parse_str(&src, "aa=");
+	parse_int_literal(&src, &desc->aa);
+
+	parse_str(&src, "padding=");
+	parse_int_literal(&src, &desc->padding[0]);
+	parse_str(&src, ",");
+	parse_int_literal(&src, &desc->padding[1]);
+	parse_str(&src, ",");
+	parse_int_literal(&src, &desc->padding[2]);
+	parse_str(&src, ",");
+	parse_int_literal(&src, &desc->padding[3]);
+
+	parse_str(&src, "spacing=");
+	parse_int_literal(&src, &desc->spacing[0]);
+	parse_str(&src, ",");
+	parse_int_literal(&src, &desc->spacing[1]);
+
+	parse_str(&src, "common");
+
+	parse_str(&src, "lineHeight=");
+	parse_int_literal(&src, &desc->line_height);
+
+	parse_str(&src, "base=");
+	parse_int_literal(&src, &desc->base);
+
+	parse_str(&src, "scaleW=");
+	parse_int_literal(&src, &desc->scale_w);
+
+	parse_str(&src, "scaleH=");
+	parse_int_literal(&src, &desc->scale_h);
+
+	parse_str(&src, "pages=");
+	parse_int_literal(&src, &desc->pages);
+
+	if (strcasecmp(desc->charset, "ANSI") == 0) {
+		desc->chars = calloc_or_die(256, sizeof(struct font_desc_char));
+		for (i = 0, parse_identifier(&src, &identifier);
+		     strcmp("char", identifier) == 0;
+		     i++, parse_identifier(&src, &identifier)) {
+			int64_t id;
+			parse_str(&src, "id=");
+			parse_int_literal(&src, &id);
+			if (id < 0 || id > 255) {
+				error(&src, "id out of range 0-255.");
+			}
+			desc->chars[id].id = id;
+			parse_str(&src, "x=");
+			parse_int_literal(&src, &desc->chars[id].x);
+			parse_str(&src, "y=");
+			parse_int_literal(&src, &desc->chars[id].y);
+			parse_str(&src, "width=");
+			parse_int_literal(&src, &desc->chars[id].width);
+			parse_str(&src, "height=");
+			parse_int_literal(&src, &desc->chars[id].height);
+			parse_str(&src, "xoffset=");
+			parse_int_literal(&src, &desc->chars[id].xoffset);
+			parse_str(&src, "yoffset=");
+			parse_int_literal(&src, &desc->chars[id].yoffset);
+			parse_str(&src, "xadvance=");
+			parse_int_literal(&src, &desc->chars[id].xadvance);
+			parse_str(&src, "page=");
+			parse_int_literal(&src, &desc->chars[id].page);
+		}
+	} else {
+		error(&src, "Unsupported charset '%s'.", desc->charset);
+	}
+
+	if (strcmp(identifier, "kernings") != 0) {
+		error(&src, "Expected kernings, but got '%s'.", identifier);
+	}
+	parse_str(&src, "count=");
+	parse_int_literal(&src, &desc->kernings_count);
+	desc->kernings = calloc_or_die(desc->kernings_count, sizeof(struct font_desc_kerning));
+	for (i = 0; i < desc->kernings_count; i++) {
+		parse_str(&src, "kerning");
+		parse_str(&src, "first=");
+		parse_int_literal(&src, &desc->kernings[i].first);
+		parse_str(&src, "second=");
+		parse_int_literal(&src, &desc->kernings[i].second);
+		parse_str(&src, "amount=");
+		parse_int_literal(&src, &desc->kernings[i].amount);
+	}
+
+	fclose(src.file);
+	free(src.buf);
+}
+
+void free_font_desc(struct font_desc* font_desc) {
+	fprintf(stderr, "free_font_desc not implemented\n");
+}
+
+/* endregion */

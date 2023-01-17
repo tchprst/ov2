@@ -375,6 +375,45 @@ struct font {
 
 /* endregion */
 
+/* region font description */
+
+struct font_desc_char {
+	int64_t id;
+	int64_t x, y;
+	int64_t width, height;
+	int64_t xoffset, yoffset;
+	int64_t xadvance;
+	int64_t page;
+};
+
+struct font_desc_kerning {
+	int64_t first, second;
+	int64_t amount;
+};
+
+struct font_desc {
+	char* face;
+	int64_t size;
+	int64_t bold;
+	int64_t italic;
+	char* charset;
+	int64_t stretch_h;
+	int64_t smooth;
+	int64_t aa;
+	int64_t padding[4];
+	int64_t spacing[2];
+	int64_t line_height;
+	int64_t base;
+	int64_t scale_w;
+	int64_t scale_h;
+	int64_t pages;
+	struct font_desc_char* chars;
+	struct font_desc_kerning* kernings;
+	int64_t kernings_count;
+};
+
+/* endregion */
+
 void parse(
 	char const* path,
 	struct sprite** sprites,
@@ -390,5 +429,9 @@ void free_widgets(struct ui_widget*);
 void free_bitmap_fonts(struct bitmap_font*);
 
 void free_fonts(struct font*);
+
+void parse_font_desc(char const* path, struct font_desc* font_desc);
+
+void free_font_desc(struct font_desc*);
 
 #endif /*OV2_PARSE_H*/
