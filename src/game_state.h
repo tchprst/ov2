@@ -19,6 +19,8 @@ enum current_window {
 
 /* TODO: Separate into actual game state and UI state. */
 struct game_state {
+	size_t localizations_count;
+	struct localization* localizations;
 	size_t province_definitions_count;
 	struct province_definition* province_definitions;
 

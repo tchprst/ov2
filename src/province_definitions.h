@@ -10,7 +10,7 @@ struct province_definition {
     unsigned char g;
     unsigned char b;
     unsigned int id;
-    char const* name;
+    char* name;
 };
 
 /* Returns an empty list on failure */

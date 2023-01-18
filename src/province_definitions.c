@@ -59,7 +59,7 @@ void free_province_definitions(
 ) {
 	size_t i;
 	for (i = 0; i < count; i++) {
-		free((void*) definitions[i].name);
+		if (definitions[i].name != NULL) free(definitions[i].name);
 	}
 	free(definitions);
 }

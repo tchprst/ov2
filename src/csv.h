@@ -28,6 +28,6 @@ bool csv_read_uint(struct csv_file* csv, unsigned int* value);
 bool csv_read_uchar(struct csv_file* csv, unsigned char* value);
 
 /* Reads the next token from the buffer as a caller-freed string */
-bool csv_read_string(struct csv_file* csv, char const** value);
+bool csv_read_string(struct csv_file* csv, char** value);
 
 #endif /*OV2_CSV_H*/

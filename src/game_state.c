@@ -2,6 +2,7 @@
 #include "province_definitions.h"
 #include "parse.h"
 #include "fs.h"
+#include "localization.h"
 #include <GL/gl.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -18,6 +19,12 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		&state->province_definitions_count
 	), state->province_definitions == NULL) {
 		fprintf(stderr, "Failed to load province definitions.\n");
+		success = false;
+	} else if (load_localizations(
+		&state->localizations,
+		&state->localizations_count
+	), state->localizations == NULL) {
+		fprintf(stderr, "Failed to load localizations.\n");
 		success = false;
 	} else if ((state->provinces_texture = SOIL_load_OGL_texture(
 		"map/provinces.bmp",
@@ -88,6 +95,10 @@ void free_game_state(struct game_state* game_state) {
 	free_province_definitions(
 		game_state->province_definitions,
 		game_state->province_definitions_count
+	);
+	free_localizations(
+		game_state->localizations,
+		game_state->localizations_count
 	);
 	free_sprites(game_state->sprites);
 	free_widgets(game_state->widgets);

@@ -161,12 +161,12 @@ bool csv_read_uchar(struct csv_file* csv, unsigned char* value) {
 	return success;
 }
 
-bool csv_read_string(struct csv_file* csv, char const** value) {
+bool csv_read_string(struct csv_file* csv, char** value) {
 	char const* token_start = csv->line + csv->column_number;
 	char const* token_end = token_start;
 	while (*token_end != '\0' && *token_end != ';') token_end++;
 	csv->column_number += (token_end - token_start) + 1;
-	*value = strdup(token_start);
+	*value = strndup(token_start, token_end - token_start);
 	if (*value == NULL) {
 		fprintf(stderr, "Failed to allocate memory for %s: %s\n", csv->filename, strerror(errno));
 		return false;
