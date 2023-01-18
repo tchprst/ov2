@@ -1,6 +1,7 @@
 #ifndef OV2_LOCALIZATION_H
 #define OV2_LOCALIZATION_H
 
+#include "parse.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -31,6 +32,12 @@ void load_localizations(
 void free_localizations(
 	struct localization* locs,
 	size_t count
+);
+
+void localize_ui_widgets(
+	struct ui_widget* widgets,
+	struct localization* locs,
+	size_t locs_count
 );
 
 #endif /*OV2_LOCALIZATION_H*/

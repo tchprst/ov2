@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <assert.h>
 
 static void load_localizations_from_file(
 	char const* path,
@@ -121,4 +122,87 @@ void free_localizations(
 		if(locs[i].finnish != NULL) free(locs[i].finnish);
 	}
 	free(locs);
+}
+
+/* This returns a caller-owned string, and will free any existing `text` string
+ * if a localization is found. */
+static char* localize_text(char* text, struct localization* locs, size_t count) {
+	size_t i;
+	if(text == NULL) return NULL;
+	for (i = 0; i < count; i++) {
+		if (strcmp(locs[i].key, text) == 0) {
+			if(text != NULL) free(text);
+			return strdup(locs[i].english);
+		}
+	}
+	return text;
+}
+
+void localize_ui_widgets(
+	struct ui_widget* widgets,
+	struct localization* locs,
+	size_t locs_count
+) {
+	/* TODO: Tooltips. */
+	size_t i;
+	for (; widgets != NULL; widgets = widgets->next) {
+		switch (widgets->type) {
+		case TYPE_WINDOW:
+			localize_ui_widgets(
+				widgets->window.children,
+				locs, locs_count
+			);
+			break;
+		case TYPE_BUTTON:
+			widgets->button.button_text = localize_text(
+				widgets->button.button_text,
+				locs, locs_count
+			);
+			break;
+		case TYPE_TEXT_BOX:
+			widgets->text_box.text = localize_text(
+				widgets->text_box.text,
+				locs, locs_count
+			);
+			break;
+		case TYPE_INSTANT_TEXT_BOX:
+			widgets->instant_text_box.text = localize_text(
+				widgets->instant_text_box.text,
+				locs, locs_count
+			);
+			break;
+		case TYPE_SCROLLBAR:
+			localize_ui_widgets(
+				widgets->scrollbar.children,
+				locs, locs_count
+			);
+			break;
+		case TYPE_CHECKBOX:
+			widgets->checkbox.button_text = localize_text(
+				widgets->checkbox.button_text,
+				locs, locs_count
+			);
+			break;
+		case TYPE_EDIT_BOX:
+			widgets->edit_box.text = localize_text(
+				widgets->edit_box.text,
+				locs, locs_count
+			);
+			break;
+		case TYPE_EU3_DIALOG:
+			localize_ui_widgets(
+				widgets->eu3_dialog.children,
+				locs, locs_count
+			);
+			break;
+		case TYPE_ICON:
+		case TYPE_OVERLAPPING_ELEMENTS_BOX:
+		case TYPE_LIST_BOX:
+		case TYPE_SHIELD:
+		case TYPE_POSITION:
+			break;
+		default:
+			assert(0);
+		}
+	}
 }

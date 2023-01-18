@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <SOIL/SOIL.h>
+#include <assert.h>
 
 struct game_state* init_game_state(int32_t window_width, int32_t window_height) {
 	bool success = true;
@@ -56,6 +57,7 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 		state->last_game_tick_time = 0;
 
 		{
+			/* load game data */
 			DIR* dir;
 			struct dirent* entry;
 			if ((dir = opendir("interface")) == NULL) {
@@ -80,6 +82,7 @@ struct game_state* init_game_state(int32_t window_width, int32_t window_height) 
 				}
 				closedir(dir);
 			}
+			localize_ui_widgets(state->widgets, state->localizations, state->localizations_count);
 		}
 	}
 
